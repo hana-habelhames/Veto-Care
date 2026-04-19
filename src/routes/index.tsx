@@ -7,6 +7,7 @@ import { RoleSelect } from "@/components/veto/RoleSelect";
 import { ClientOnboarding } from "@/components/veto/ClientOnboarding";
 import { VetoOnboarding } from "@/components/veto/VetoOnboarding";
 import { ClientDashboard } from "@/components/veto/ClientDashboard";
+import { VetoDashboard } from "@/components/veto/VetoDashboard";
 import { PawPrint, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ClientProfile } from "@/components/veto/data";
@@ -23,15 +24,17 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type View = "landing" | "role" | "client" | "veto" | "dashboard" | "done";
+type View = "landing" | "role" | "client" | "veto" | "dashboard" | "vet-dashboard" | "done";
 
 function Index() {
   const [view, setView] = useState<View>("landing");
   const [profile, setProfile] = useState<ClientProfile | null>(null);
 
+  const inDashboard = view === "dashboard" || view === "vet-dashboard";
+
   return (
     <div className="min-h-screen bg-background">
-      {view !== "dashboard" && (
+      {!inDashboard && (
         <header className="px-6 py-5 border-b border-border/40">
           <div className="mx-auto max-w-6xl flex items-center justify-between">
             <button onClick={() => setView("landing")} className="flex items-center gap-2 text-brand-title font-bold text-xl">
@@ -49,14 +52,14 @@ function Index() {
         </header>
       )}
 
-      {view === "dashboard" && (
+      {inDashboard && (
         <header className="px-6 py-4 border-b border-border/40 bg-card">
-          <div className="mx-auto max-w-5xl flex items-center justify-between">
+          <div className="mx-auto max-w-6xl flex items-center justify-between">
             <button onClick={() => setView("landing")} className="flex items-center gap-2 text-brand-title font-bold text-lg">
               <span className="h-8 w-8 rounded-xl bg-brand-accent flex items-center justify-center">
                 <PawPrint className="h-4 w-4 text-brand-accent-foreground" />
               </span>
-              Veto-Care
+              Veto-Care {view === "vet-dashboard" && <span className="text-brand-accent text-xs font-semibold ml-1">PRO</span>}
             </button>
             <Button variant="ghost" onClick={() => setView("landing")} className="text-sm text-muted-foreground hover:text-brand-title">
               Déconnexion
@@ -81,8 +84,9 @@ function Index() {
               onDone={(p) => { setProfile(p); setView("dashboard"); }}
             />
           )}
-          {view === "veto" && <VetoOnboarding onBack={() => setView("role")} onDone={() => setView("done")} />}
+          {view === "veto" && <VetoOnboarding onBack={() => setView("role")} onDone={() => setView("vet-dashboard")} />}
           {view === "dashboard" && profile && <ClientDashboard profile={profile} />}
+          {view === "vet-dashboard" && <VetoDashboard />}
           {view === "done" && (
             <div className="min-h-[60vh] flex items-center justify-center px-6">
               <div className="text-center max-w-md">
