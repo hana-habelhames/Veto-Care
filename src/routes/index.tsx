@@ -8,7 +8,10 @@ import { ClientOnboarding } from "@/components/veto/ClientOnboarding";
 import { VetoOnboarding } from "@/components/veto/VetoOnboarding";
 import { ClientDashboard } from "@/components/veto/ClientDashboard";
 import { VetoDashboard } from "@/components/veto/VetoDashboard";
-import { PawPrint, CheckCircle2 } from "lucide-react";
+import { ClinicSearch } from "@/components/veto/ClinicSearch";
+import { TopNavbar } from "@/components/veto/TopNavbar";
+import { SosModal } from "@/components/veto/SosModal";
+import { CheckCircle2, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ClientProfile } from "@/components/veto/data";
 
@@ -24,44 +27,42 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type View = "landing" | "role" | "client" | "veto" | "dashboard" | "vet-dashboard" | "done";
+type View = "landing" | "role" | "client" | "veto" | "dashboard" | "vet-dashboard" | "search" | "done";
 
 function Index() {
   const [view, setView] = useState<View>("landing");
   const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [sosOpen, setSosOpen] = useState(false);
 
-  const inDashboard = view === "dashboard" || view === "vet-dashboard";
+  const isOnboardingFlow = view === "role" || view === "client" || view === "veto" || view === "done";
+  const showNavbar = !isOnboardingFlow && view !== "vet-dashboard";
+
+  const goLanding = () => setView("landing");
+  const goSearch = () => setView("search");
+  const goProfile = () => {
+    if (profile) setView("dashboard");
+    else setView("role");
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {!inDashboard && (
-        <header className="px-6 py-5 border-b border-border/40">
-          <div className="mx-auto max-w-6xl flex items-center justify-between">
-            <button onClick={() => setView("landing")} className="flex items-center gap-2 text-brand-title font-bold text-xl">
-              <span className="h-9 w-9 rounded-xl bg-brand-accent flex items-center justify-center">
-                <PawPrint className="h-5 w-5 text-brand-accent-foreground" />
-              </span>
-              Veto-Care
-            </button>
-            {view === "landing" && (
-              <Button onClick={() => setView("role")} className="bg-brand-title text-primary-foreground hover:bg-brand-title/90 rounded-xl">
-                S'inscrire
-              </Button>
-            )}
-          </div>
-        </header>
+      {showNavbar && (
+        <TopNavbar
+          onLogo={goLanding}
+          onSearch={goSearch}
+          onProfile={profile ? goProfile : undefined}
+          showAuth={!profile && view === "landing"}
+          onAuth={() => setView("role")}
+        />
       )}
 
-      {inDashboard && (
-        <header className="px-6 py-4 border-b border-border/40 bg-card">
-          <div className="mx-auto max-w-6xl flex items-center justify-between">
-            <button onClick={() => setView("landing")} className="flex items-center gap-2 text-brand-title font-bold text-lg">
-              <span className="h-8 w-8 rounded-xl bg-brand-accent flex items-center justify-center">
-                <PawPrint className="h-4 w-4 text-brand-accent-foreground" />
-              </span>
-              Veto-Care {view === "vet-dashboard" && <span className="text-brand-accent text-xs font-semibold ml-1">PRO</span>}
+      {view === "vet-dashboard" && (
+        <header className="px-6 py-4 border-b border-brand-border/70 bg-card">
+          <div className="mx-auto max-w-7xl flex items-center justify-between">
+            <button onClick={goLanding} className="flex items-center gap-2 text-brand-title font-bold text-lg">
+              Veto-Care <span className="text-brand-accent text-xs font-semibold ml-1">PRO</span>
             </button>
-            <Button variant="ghost" onClick={() => setView("landing")} className="text-sm text-muted-foreground hover:text-brand-title">
+            <Button variant="ghost" onClick={goLanding} className="text-sm text-muted-foreground hover:text-brand-title">
               Déconnexion
             </Button>
           </div>
@@ -74,7 +75,7 @@ function Index() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
           {view === "landing" && <Landing onStart={() => setView("role")} />}
           {view === "role" && <RoleSelect onSelect={(r) => setView(r)} onBack={() => setView("landing")} />}
@@ -85,8 +86,16 @@ function Index() {
             />
           )}
           {view === "veto" && <VetoOnboarding onBack={() => setView("role")} onDone={() => setView("vet-dashboard")} />}
-          {view === "dashboard" && profile && <ClientDashboard profile={profile} />}
+          {view === "dashboard" && profile && (
+            <ClientDashboard
+              profile={profile}
+              setProfile={setProfile}
+              onLogout={() => { setProfile(null); setView("landing"); }}
+              onFindClinic={goSearch}
+            />
+          )}
           {view === "vet-dashboard" && <VetoDashboard />}
+          {view === "search" && <ClinicSearch />}
           {view === "done" && (
             <div className="min-h-[60vh] flex items-center justify-center px-6">
               <div className="text-center max-w-md">
@@ -95,7 +104,7 @@ function Index() {
                 </div>
                 <h1 className="text-3xl font-bold text-brand-title mb-3">Bienvenue dans Veto-Care !</h1>
                 <p className="text-muted-foreground mb-8">Votre profil a bien été créé.</p>
-                <Button onClick={() => setView("landing")} className="bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl">
+                <Button onClick={goLanding} className="bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl">
                   Retour à l'accueil
                 </Button>
               </div>
@@ -104,6 +113,22 @@ function Index() {
         </motion.main>
       </AnimatePresence>
 
+      {/* Global SOS FAB (visible everywhere except onboarding flow) */}
+      {!isOnboardingFlow && (
+        <motion.button
+          onClick={() => setSosOpen(true)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full bg-brand-sos text-brand-sos-foreground shadow-lg flex flex-col items-center justify-center gap-0.5"
+          style={{ boxShadow: "0 10px 30px -8px oklch(0.7 0.085 20 / 0.6)" }}
+          aria-label="Urgences SOS"
+        >
+          <Phone className="h-5 w-5" />
+          <span className="text-[10px] font-bold tracking-wider">SOS</span>
+        </motion.button>
+      )}
+
+      <SosModal open={sosOpen} onClose={() => setSosOpen(false)} />
       <Toaster />
     </div>
   );
