@@ -32,7 +32,9 @@
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
   --color-brand-sos: var(--brand-sos);
+  --color-brand-sos-soft: var(--brand-sos-soft);
   --color-brand-sos-foreground: var(--brand-sos-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -72,13 +74,21 @@
   /* Veto-Care palette
    * bg #F4EFEB, titles #2F4156, accent #567C8D, cards #FFFFFF
    */
-  --background: oklch(0.952 0.012 60);
+  /* #F4EFEB */
+  --background: oklch(0.948 0.008 60);
   --foreground: oklch(0.34 0.04 250);
+  /* #2F4156 */
   --brand-title: oklch(0.34 0.04 250);
-  --brand-accent: oklch(0.55 0.05 230);
+  /* #567C8D */
+  --brand-accent: oklch(0.553 0.043 232);
   --brand-accent-foreground: oklch(0.99 0 0);
-  --brand-soft: oklch(0.92 0.02 230);
-  --brand-sos: oklch(0.7 0.09 20);
+  /* light tint of accent */
+  --brand-soft: oklch(0.93 0.018 232);
+  /* #C8D9E6 */
+  --brand-border: oklch(0.866 0.024 232);
+  /* #D98A8A */
+  --brand-sos: oklch(0.7 0.085 20);
+  --brand-sos-soft: oklch(0.94 0.03 20);
   --brand-sos-foreground: oklch(0.99 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.34 0.04 250);
@@ -94,9 +104,9 @@
   --accent-foreground: oklch(0.99 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.88 0.02 60);
-  --input: oklch(0.88 0.02 60);
-  --ring: oklch(0.55 0.05 230);
+  --border: oklch(0.866 0.024 232);
+  --input: oklch(0.866 0.024 232);
+  --ring: oklch(0.553 0.043 232);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
