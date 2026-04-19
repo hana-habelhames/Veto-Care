@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import type { Animal, ClientProfile } from "./data";
 
-type Animal = { id: string; name: string; species: string; age: string };
-
-export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
+export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDone: (profile: ClientProfile) => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,7 +25,7 @@ export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDon
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Profil créé !", { description: `${animals.length} animal(aux) enregistré(s).` });
-    onDone();
+    onDone({ fullName, email, phone, city, animals });
   };
 
   return (
