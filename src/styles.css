@@ -32,6 +32,8 @@
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-sos: var(--brand-sos);
+  --color-brand-sos-foreground: var(--brand-sos-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -76,6 +78,8 @@
   --brand-accent: oklch(0.55 0.05 230);
   --brand-accent-foreground: oklch(0.99 0 0);
   --brand-soft: oklch(0.92 0.02 230);
+  --brand-sos: oklch(0.7 0.09 20);
+  --brand-sos-foreground: oklch(0.99 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.34 0.04 250);
   --popover: oklch(1 0 0);
