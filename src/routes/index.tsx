@@ -10,7 +10,7 @@ import { ClinicSearch } from "@/components/veto/ClinicSearch";
 import { TopNavbar } from "@/components/veto/TopNavbar";
 import { Footer } from "@/components/veto/Footer";
 import { SosModal } from "@/components/veto/SosModal";
-import { Phone } from "lucide-react";
+import { Phone, ArrowLeft } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/")({
@@ -33,15 +33,33 @@ type View = "landing" | "auth" | "dashboard" | "search";
 
 function Index() {
   const { user, profile, loading } = useAuth();
-  const [view, setView] = useState<View>("landing");
+  const [history, setHistory] = useState<View[]>(["landing"]);
+  const view = history[history.length - 1];
   const [sosOpen, setSosOpen] = useState(false);
+
+  const navigate = (next: View) => setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
+  const goBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
 
   // Auto-redirect to dashboard once profile is loaded after login
   const effectiveView: View = user && profile && view !== "search" ? "dashboard" : view;
 
-  const goLanding = () => setView("landing");
-  const goSearch = () => setView("search");
-  const goAuth = () => setView("auth");
+  const goLanding = () => setHistory(["landing"]);
+  const goSearch = () => navigate("search");
+  const goAuth = () => navigate("auth");
+
+  const BackButton = () =>
+    effectiveView !== "landing" && history.length > 1 ? (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4">
+        <button
+          onClick={goBack}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-brand-title transition-colors rounded-xl px-3 py-2 hover:bg-brand-soft"
+          aria-label="Retour"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </button>
+      </div>
+    ) : null;
 
   if (loading) {
     return (
@@ -56,8 +74,9 @@ function Index() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <TopNavbar onLogo={goLanding} onSearch={goSearch} onProfile={() => {}} />
+        <BackButton />
         <div className="flex-1"><VetoDashboard /></div>
-        <Footer onNavigate={(k) => setView(k === "search" ? "search" : "landing")} />
+        <Footer onNavigate={(k) => navigate(k === "search" ? "search" : "landing")} />
         <Toaster />
       </div>
     );
@@ -68,10 +87,12 @@ function Index() {
       <TopNavbar
         onLogo={goLanding}
         onSearch={goSearch}
-        onProfile={user ? () => setView("dashboard") : undefined}
+        onProfile={user ? () => navigate("dashboard") : undefined}
         showAuth={!user}
         onAuth={goAuth}
       />
+
+      <BackButton />
 
       <div className="flex-1">
         <AnimatePresence mode="wait">
@@ -83,14 +104,14 @@ function Index() {
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
             {effectiveView === "landing" && <Landing onStart={goAuth} />}
-            {effectiveView === "auth" && <AuthScreen onBack={goLanding} onSuccess={() => setView("dashboard")} />}
+            {effectiveView === "auth" && <AuthScreen onBack={goBack} onSuccess={() => navigate("dashboard")} />}
             {effectiveView === "dashboard" && user && profile && <ClientDashboard onFindClinic={goSearch} />}
             {effectiveView === "search" && <ClinicSearch />}
           </motion.main>
         </AnimatePresence>
       </div>
 
-      <Footer onNavigate={(k) => setView(k === "search" ? "search" : "landing")} />
+      <Footer onNavigate={(k) => navigate(k === "search" ? "search" : "landing")} />
 
       <motion.button
         onClick={() => setSosOpen(true)}
