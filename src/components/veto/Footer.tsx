@@ -1,4 +1,4 @@
-import { PawPrint, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import { PawPrint, Mail, Phone, MapPin, Send, Camera, AtSign } from "lucide-react";
 
 export function Footer({ onNavigate }: { onNavigate?: (key: "search" | "landing") => void }) {
   return (
@@ -42,7 +42,7 @@ export function Footer({ onNavigate }: { onNavigate?: (key: "search" | "landing"
         <div>
           <h4 className="font-semibold text-brand-title mb-4 text-sm uppercase tracking-wide">Suivez-nous</h4>
           <div className="flex gap-3">
-            {[Facebook, Instagram, Twitter].map((Icon, i) => (
+            {[Send, Camera, AtSign].map((Icon, i) => (
               <a key={i} href="#" className="h-10 w-10 rounded-xl bg-brand-soft flex items-center justify-center text-brand-accent hover:bg-brand-accent hover:text-brand-accent-foreground transition-colors">
                 <Icon className="h-4 w-4" />
               </a>
