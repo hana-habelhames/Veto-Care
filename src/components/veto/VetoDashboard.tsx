@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
-  LayoutDashboard, Users, MessageSquare, Settings, LogOut, Menu,
-  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird,
+  LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight,
+  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,8 @@ type Consultation = {
   reason: string;
   time: string;
   status: Status;
-  startedAt?: number; // ms timestamp when set to in_progress
+  startedAt?: number;
+  endedAt?: number;
   history: { date: string; note: string }[];
   documents: { name: string; url: string }[];
 };
@@ -31,9 +32,9 @@ type Consultation = {
 const SEED: Consultation[] = [
   {
     id: "c1",
-    ownerName: "Marie Dupont",
-    ownerEmail: "marie.dupont@email.fr",
-    ownerPhone: "+33 6 12 34 56 78",
+    ownerName: "Amine Benali",
+    ownerEmail: "amine.benali@email.dz",
+    ownerPhone: "+213 555 12 34 56",
     animal: { name: "Pixel", species: "Chat européen", age: "4 ans" },
     reason: "Vomissements répétés depuis 2 jours, perte d'appétit.",
     time: "09:00",
@@ -48,9 +49,9 @@ const SEED: Consultation[] = [
   },
   {
     id: "c2",
-    ownerName: "Julien Martin",
-    ownerEmail: "j.martin@email.fr",
-    ownerPhone: "+33 6 98 76 54 32",
+    ownerName: "Meriem Mansouri",
+    ownerEmail: "meriem.mansouri@email.dz",
+    ownerPhone: "+213 661 98 76 54",
     animal: { name: "Rocky", species: "Berger australien", age: "2 ans" },
     reason: "Boiterie patte avant droite après une promenade.",
     time: "09:30",
@@ -67,21 +68,21 @@ const SEED: Consultation[] = [
   },
   {
     id: "c3",
-    ownerName: "Sophie Bernard",
-    ownerEmail: "sophie.b@email.fr",
-    ownerPhone: "+33 6 55 44 33 22",
+    ownerName: "Yacine Brahimi",
+    ownerEmail: "yacine.brahimi@email.dz",
+    ownerPhone: "+213 770 55 44 33",
     animal: { name: "Mochi", species: "Lapin nain", age: "1 an" },
     reason: "Contrôle dentaire de routine.",
     time: "10:15",
-    status: "done",
+    status: "waiting",
     history: [{ date: "10/02/2024", note: "Première consultation — RAS" }],
     documents: [],
   },
   {
     id: "c4",
-    ownerName: "Antoine Leroy",
-    ownerEmail: "a.leroy@email.fr",
-    ownerPhone: "+33 6 11 22 33 44",
+    ownerName: "Sofiane Haddad",
+    ownerEmail: "sofiane.haddad@email.dz",
+    ownerPhone: "+213 540 11 22 33",
     animal: { name: "Luna", species: "Labrador", age: "7 ans" },
     reason: "Suivi traitement arthrose senior.",
     time: "11:00",
@@ -119,14 +120,13 @@ function speciesIcon(species: string) {
   return Dog;
 }
 
-type Section = "overview" | "queue" | "patients" | "calendar" | "messages" | "profile" | "settings";
+type Section = "overview" | "queue" | "patients" | "calendar" | "profile" | "settings";
 
 const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
   { key: "queue", label: "File d'attente", icon: ListChecks },
   { key: "patients", label: "Gestion Patients", icon: Users },
   { key: "calendar", label: "Calendrier", icon: Calendar },
-  { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "profile", label: "Mon Profil", icon: UserCog },
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
@@ -144,10 +144,14 @@ export function VetoDashboard() {
       list.map((c) => {
         if (c.id !== id) return c;
         const next = STATUS_CYCLE[c.status];
+        if (next === "done") {
+          toast.success(`Consultation de ${c.animal.name} terminée`);
+        }
         return {
           ...c,
           status: next,
           startedAt: next === "in_progress" ? Date.now() : c.startedAt,
+          endedAt: next === "done" ? Date.now() : undefined,
         };
       })
     );
@@ -202,7 +206,6 @@ export function VetoDashboard() {
               )}
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
               {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
-              {section === "messages" && <Placeholder title="Messages" icon={MessageSquare} text="Bientôt : messagerie sécurisée avec vos clients." />}
               {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} />}
               {section === "settings" && <Placeholder title="Paramètres" icon={Settings} text="Bientôt : préférences, notifications et sécurité." />}
             </motion.div>
@@ -317,6 +320,18 @@ function QueueView({
   onOpenDoc: (d: { name: string; url: string }) => void;
 }) {
   const [filter, setFilter] = useState<Status | "all">("all");
+  const [justCompleted, setJustCompleted] = useState<string | null>(null);
+
+  const handleCycle = (c: Consultation) => {
+    const willBeDone = STATUS_CYCLE[c.status] === "done";
+    onCycleStatus(c.id);
+    if (willBeDone) {
+      setJustCompleted(c.id);
+      window.setTimeout(() => {
+        setJustCompleted((curr) => (curr === c.id ? null : curr));
+      }, 6000);
+    }
+  };
 
   const counts = items.reduce(
     (acc, c) => ({ ...acc, [c.status]: (acc[c.status] || 0) + 1 }),
@@ -375,7 +390,8 @@ function QueueView({
                 const SpeciesIcon = speciesIcon(c.animal.species);
                 const priority = isPriority(c.reason);
                 return (
-                  <tr key={c.id} className="border-t border-brand-border/60 hover:bg-brand-soft/20 transition-colors">
+                  <React.Fragment key={c.id}>
+                  <tr className="border-t border-brand-border/60 hover:bg-brand-soft/20 transition-colors">
                     <td className="px-5 py-4 align-top">
                       <div className="font-medium text-brand-title">{c.time}</div>
                       {priority && (
@@ -425,12 +441,24 @@ function QueueView({
                       )}
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => onCycleStatus(c.id)} />
+                      <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                     </td>
                     <td className="px-5 py-4 align-top">
                       <ActionMenu />
                     </td>
                   </tr>
+                  {justCompleted === c.id && (
+                    <tr key={c.id + "-quick"}>
+                      <td colSpan={7} className="px-5 pb-4 pt-0">
+                        <QuickCompletePanel
+                          consultation={c}
+                          nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                          onDismiss={() => setJustCompleted(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
               {filtered.length === 0 && (
@@ -470,7 +498,7 @@ function QueueView({
                       <span className="text-xs text-muted-foreground">· {c.animal.species}</span>
                     </button>
                   </div>
-                  <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => onCycleStatus(c.id)} />
+                  <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2 font-light">{c.reason}</p>
                 <div className="flex items-center justify-between">
@@ -489,6 +517,13 @@ function QueueView({
                   ) : <span />}
                   <ActionMenu />
                 </div>
+                {justCompleted === c.id && (
+                  <QuickCompletePanel
+                    consultation={c}
+                    nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                    onDismiss={() => setJustCompleted(null)}
+                  />
+                )}
               </div>
             );
           })}
@@ -523,12 +558,11 @@ function ActionMenu() {
   );
 }
 
-function StatusPill({ status, startedAt, onClick, compact }: { status: Status; startedAt?: number; onClick?: () => void; compact?: boolean }) {
+function StatusPill({ status, startedAt, onClick, compact, pulse }: { status: Status; startedAt?: number; onClick?: () => void; compact?: boolean; pulse?: boolean }) {
   const m = STATUS_META[status];
   const Icon = m.icon;
   const [, force] = useState(0);
 
-  // Re-render every 30s if in_progress to keep elapsed time fresh
   useEffect(() => {
     if (status !== "in_progress" || !startedAt) return;
     const id = setInterval(() => force((n) => n + 1), 30000);
@@ -538,17 +572,76 @@ function StatusPill({ status, startedAt, onClick, compact }: { status: Status; s
   const elapsed = status === "in_progress" && startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 60000)) : null;
 
   const Comp: React.ElementType = onClick ? motion.button : "span";
-  const motionProps = onClick ? { whileTap: { scale: 0.94 } } : {};
+  const motionProps: any = onClick ? { whileTap: { scale: 0.94 } } : {};
+  if (pulse) {
+    motionProps.initial = { scale: 0.8 };
+    motionProps.animate = { scale: [0.8, 1.15, 1] };
+    motionProps.transition = { duration: 0.5, ease: "easeOut" };
+  }
 
   return (
     <Comp
       onClick={onClick}
       {...motionProps}
-      className={`inline-flex items-center gap-1.5 rounded-full border ${compact ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} font-semibold transition-colors ${m.classes} ${onClick ? "cursor-pointer" : ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${compact ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} font-semibold transition-colors ${m.classes} ${onClick ? "cursor-pointer" : ""} ${pulse ? "ring-2 ring-emerald-300 ring-offset-1" : ""}`}
     >
-      <Icon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} /> {m.label}
+      {pulse ? <Check className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} /> : <Icon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />} {m.label}
       {elapsed !== null && <span className="opacity-70 font-normal">· depuis {elapsed} min</span>}
     </Comp>
+  );
+}
+
+function QuickCompletePanel({ consultation, nextWaiting, onDismiss }: { consultation: Consultation; nextWaiting: Consultation | null; onDismiss: () => void }) {
+  const endTime = consultation.endedAt ? new Date(consultation.endedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          className="h-9 w-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0"
+        >
+          <Check className="h-5 w-5" />
+        </motion.div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-emerald-900">
+            Consultation de {consultation.animal.name} terminée {endTime && `à ${endTime}`}
+          </p>
+          <p className="text-xs text-emerald-800/80">Que souhaitez-vous faire maintenant ?</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => { toast.info(`Ordonnance pour ${consultation.animal.name}`); onDismiss(); }}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-accent text-brand-accent-foreground text-xs font-semibold px-3 py-2 hover:opacity-90 transition"
+        >
+          <FileText className="h-3.5 w-3.5" /> Générer l'ordonnance
+        </button>
+        {nextWaiting ? (
+          <button
+            onClick={() => { toast.success(`Patient suivant : ${nextWaiting.animal.name} (${nextWaiting.ownerName})`); onDismiss(); }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-card border border-brand-border text-brand-title text-xs font-semibold px-3 py-2 hover:border-brand-accent/50 transition"
+          >
+            Patient suivant <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <span className="text-xs text-emerald-800/70 self-center">Aucun patient en attente</span>
+        )}
+        <button
+          onClick={onDismiss}
+          title="Fermer"
+          className="h-8 w-8 rounded-lg flex items-center justify-center text-emerald-900/70 hover:bg-emerald-100 transition"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
