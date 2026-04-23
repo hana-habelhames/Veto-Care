@@ -440,12 +440,24 @@ function QueueView({
                       )}
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => onCycleStatus(c.id)} />
+                      <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                     </td>
                     <td className="px-5 py-4 align-top">
                       <ActionMenu />
                     </td>
                   </tr>
+                  {justCompleted === c.id && (
+                    <tr key={c.id + "-quick"}>
+                      <td colSpan={7} className="px-5 pb-4 pt-0">
+                        <QuickCompletePanel
+                          consultation={c}
+                          nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                          onDismiss={() => setJustCompleted(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </>
                 );
               })}
               {filtered.length === 0 && (
