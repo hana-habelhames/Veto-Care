@@ -202,7 +202,6 @@ export function VetoDashboard() {
               )}
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
               {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
-              {section === "messages" && <Placeholder title="Messages" icon={MessageSquare} text="Bientôt : messagerie sécurisée avec vos clients." />}
               {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} />}
               {section === "settings" && <Placeholder title="Paramètres" icon={Settings} text="Bientôt : préférences, notifications et sécurité." />}
             </motion.div>
