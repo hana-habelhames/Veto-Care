@@ -144,10 +144,14 @@ export function VetoDashboard() {
       list.map((c) => {
         if (c.id !== id) return c;
         const next = STATUS_CYCLE[c.status];
+        if (next === "done") {
+          toast.success(`Consultation de ${c.animal.name} terminée`);
+        }
         return {
           ...c,
           status: next,
           startedAt: next === "in_progress" ? Date.now() : c.startedAt,
+          endedAt: next === "done" ? Date.now() : undefined,
         };
       })
     );
