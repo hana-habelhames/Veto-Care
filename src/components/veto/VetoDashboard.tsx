@@ -637,7 +637,6 @@ function QuickCompletePanel({ consultation, nextWaiting, onDismiss }: { consulta
     </motion.div>
   );
 }
-}
 
 /* ---------- Patients ---------- */
 function PatientsView({ consultations, onSelect }: { consultations: Consultation[]; onSelect: (c: Consultation) => void }) {
