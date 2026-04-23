@@ -498,7 +498,7 @@ function QueueView({
                       <span className="text-xs text-muted-foreground">· {c.animal.species}</span>
                     </button>
                   </div>
-                  <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => onCycleStatus(c.id)} />
+                  <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2 font-light">{c.reason}</p>
                 <div className="flex items-center justify-between">
