@@ -390,7 +390,8 @@ function QueueView({
                 const SpeciesIcon = speciesIcon(c.animal.species);
                 const priority = isPriority(c.reason);
                 return (
-                  <tr key={c.id} className="border-t border-brand-border/60 hover:bg-brand-soft/20 transition-colors">
+                  <React.Fragment key={c.id}>
+                  <tr className="border-t border-brand-border/60 hover:bg-brand-soft/20 transition-colors">
                     <td className="px-5 py-4 align-top">
                       <div className="font-medium text-brand-title">{c.time}</div>
                       {priority && (
