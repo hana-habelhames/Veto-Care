@@ -458,7 +458,7 @@ function QueueView({
                       </td>
                     </tr>
                   )}
-                  </>
+                  </React.Fragment>
                 );
               })}
               {filtered.length === 0 && (
