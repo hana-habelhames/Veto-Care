@@ -23,7 +23,8 @@ type Consultation = {
   reason: string;
   time: string;
   status: Status;
-  startedAt?: number; // ms timestamp when set to in_progress
+  startedAt?: number;
+  endedAt?: number;
   history: { date: string; note: string }[];
   documents: { name: string; url: string }[];
 };
@@ -31,9 +32,9 @@ type Consultation = {
 const SEED: Consultation[] = [
   {
     id: "c1",
-    ownerName: "Marie Dupont",
-    ownerEmail: "marie.dupont@email.fr",
-    ownerPhone: "+33 6 12 34 56 78",
+    ownerName: "Amine Benali",
+    ownerEmail: "amine.benali@email.dz",
+    ownerPhone: "+213 555 12 34 56",
     animal: { name: "Pixel", species: "Chat européen", age: "4 ans" },
     reason: "Vomissements répétés depuis 2 jours, perte d'appétit.",
     time: "09:00",
@@ -48,9 +49,9 @@ const SEED: Consultation[] = [
   },
   {
     id: "c2",
-    ownerName: "Julien Martin",
-    ownerEmail: "j.martin@email.fr",
-    ownerPhone: "+33 6 98 76 54 32",
+    ownerName: "Meriem Mansouri",
+    ownerEmail: "meriem.mansouri@email.dz",
+    ownerPhone: "+213 661 98 76 54",
     animal: { name: "Rocky", species: "Berger australien", age: "2 ans" },
     reason: "Boiterie patte avant droite après une promenade.",
     time: "09:30",
@@ -67,21 +68,21 @@ const SEED: Consultation[] = [
   },
   {
     id: "c3",
-    ownerName: "Sophie Bernard",
-    ownerEmail: "sophie.b@email.fr",
-    ownerPhone: "+33 6 55 44 33 22",
+    ownerName: "Yacine Brahimi",
+    ownerEmail: "yacine.brahimi@email.dz",
+    ownerPhone: "+213 770 55 44 33",
     animal: { name: "Mochi", species: "Lapin nain", age: "1 an" },
     reason: "Contrôle dentaire de routine.",
     time: "10:15",
-    status: "done",
+    status: "waiting",
     history: [{ date: "10/02/2024", note: "Première consultation — RAS" }],
     documents: [],
   },
   {
     id: "c4",
-    ownerName: "Antoine Leroy",
-    ownerEmail: "a.leroy@email.fr",
-    ownerPhone: "+33 6 11 22 33 44",
+    ownerName: "Sofiane Haddad",
+    ownerEmail: "sofiane.haddad@email.dz",
+    ownerPhone: "+213 540 11 22 33",
     animal: { name: "Luna", species: "Labrador", age: "7 ans" },
     reason: "Suivi traitement arthrose senior.",
     time: "11:00",
