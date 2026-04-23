@@ -551,12 +551,11 @@ function ActionMenu() {
   );
 }
 
-function StatusPill({ status, startedAt, onClick, compact }: { status: Status; startedAt?: number; onClick?: () => void; compact?: boolean }) {
+function StatusPill({ status, startedAt, onClick, compact, pulse }: { status: Status; startedAt?: number; onClick?: () => void; compact?: boolean; pulse?: boolean }) {
   const m = STATUS_META[status];
   const Icon = m.icon;
   const [, force] = useState(0);
 
-  // Re-render every 30s if in_progress to keep elapsed time fresh
   useEffect(() => {
     if (status !== "in_progress" || !startedAt) return;
     const id = setInterval(() => force((n) => n + 1), 30000);
@@ -566,18 +565,78 @@ function StatusPill({ status, startedAt, onClick, compact }: { status: Status; s
   const elapsed = status === "in_progress" && startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 60000)) : null;
 
   const Comp: React.ElementType = onClick ? motion.button : "span";
-  const motionProps = onClick ? { whileTap: { scale: 0.94 } } : {};
+  const motionProps: any = onClick ? { whileTap: { scale: 0.94 } } : {};
+  if (pulse) {
+    motionProps.initial = { scale: 0.8 };
+    motionProps.animate = { scale: [0.8, 1.15, 1] };
+    motionProps.transition = { duration: 0.5, ease: "easeOut" };
+  }
 
   return (
     <Comp
       onClick={onClick}
       {...motionProps}
-      className={`inline-flex items-center gap-1.5 rounded-full border ${compact ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} font-semibold transition-colors ${m.classes} ${onClick ? "cursor-pointer" : ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${compact ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} font-semibold transition-colors ${m.classes} ${onClick ? "cursor-pointer" : ""} ${pulse ? "ring-2 ring-emerald-300 ring-offset-1" : ""}`}
     >
-      <Icon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} /> {m.label}
+      {pulse ? <Check className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} /> : <Icon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />} {m.label}
       {elapsed !== null && <span className="opacity-70 font-normal">· depuis {elapsed} min</span>}
     </Comp>
   );
+}
+
+function QuickCompletePanel({ consultation, nextWaiting, onDismiss }: { consultation: Consultation; nextWaiting: Consultation | null; onDismiss: () => void }) {
+  const endTime = consultation.endedAt ? new Date(consultation.endedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          className="h-9 w-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0"
+        >
+          <Check className="h-5 w-5" />
+        </motion.div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-emerald-900">
+            Consultation de {consultation.animal.name} terminée {endTime && `à ${endTime}`}
+          </p>
+          <p className="text-xs text-emerald-800/80">Que souhaitez-vous faire maintenant ?</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => { toast.info(`Ordonnance pour ${consultation.animal.name}`); onDismiss(); }}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-accent text-brand-accent-foreground text-xs font-semibold px-3 py-2 hover:opacity-90 transition"
+        >
+          <FileText className="h-3.5 w-3.5" /> Générer l'ordonnance
+        </button>
+        {nextWaiting ? (
+          <button
+            onClick={() => { toast.success(`Patient suivant : ${nextWaiting.animal.name} (${nextWaiting.ownerName})`); onDismiss(); }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-card border border-brand-border text-brand-title text-xs font-semibold px-3 py-2 hover:border-brand-accent/50 transition"
+          >
+            Patient suivant <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <span className="text-xs text-emerald-800/70 self-center">Aucun patient en attente</span>
+        )}
+        <button
+          onClick={onDismiss}
+          title="Fermer"
+          className="h-8 w-8 rounded-lg flex items-center justify-center text-emerald-900/70 hover:bg-emerald-100 transition"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
 }
 
 /* ---------- Patients ---------- */
