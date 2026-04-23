@@ -517,6 +517,13 @@ function QueueView({
                   ) : <span />}
                   <ActionMenu />
                 </div>
+                {justCompleted === c.id && (
+                  <QuickCompletePanel
+                    consultation={c}
+                    nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                    onDismiss={() => setJustCompleted(null)}
+                  />
+                )}
               </div>
             );
           })}
