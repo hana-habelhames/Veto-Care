@@ -320,6 +320,18 @@ function QueueView({
   onOpenDoc: (d: { name: string; url: string }) => void;
 }) {
   const [filter, setFilter] = useState<Status | "all">("all");
+  const [justCompleted, setJustCompleted] = useState<string | null>(null);
+
+  const handleCycle = (c: Consultation) => {
+    const willBeDone = STATUS_CYCLE[c.status] === "done";
+    onCycleStatus(c.id);
+    if (willBeDone) {
+      setJustCompleted(c.id);
+      window.setTimeout(() => {
+        setJustCompleted((curr) => (curr === c.id ? null : curr));
+      }, 6000);
+    }
+  };
 
   const counts = items.reduce(
     (acc, c) => ({ ...acc, [c.status]: (acc[c.status] || 0) + 1 }),
