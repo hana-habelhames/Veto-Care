@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
-  LayoutDashboard, Users, MessageSquare, Settings, LogOut, Menu,
-  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird,
+  LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight,
+  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
