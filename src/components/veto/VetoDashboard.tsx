@@ -120,14 +120,13 @@ function speciesIcon(species: string) {
   return Dog;
 }
 
-type Section = "overview" | "queue" | "patients" | "calendar" | "messages" | "profile" | "settings";
+type Section = "overview" | "queue" | "patients" | "calendar" | "profile" | "settings";
 
 const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
   { key: "queue", label: "File d'attente", icon: ListChecks },
   { key: "patients", label: "Gestion Patients", icon: Users },
   { key: "calendar", label: "Calendrier", icon: Calendar },
-  { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "profile", label: "Mon Profil", icon: UserCog },
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
