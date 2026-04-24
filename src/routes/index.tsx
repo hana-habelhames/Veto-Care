@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Landing } from "@/components/veto/Landing";
 import { AuthScreen } from "@/components/veto/AuthScreen";
 import { ClientDashboard } from "@/components/veto/ClientDashboard";
 import { VetoDashboard } from "@/components/veto/VetoDashboard";
 import { ClinicSearch } from "@/components/veto/ClinicSearch";
+import { NewsView } from "@/components/veto/NewsView";
 import { TopNavbar } from "@/components/veto/TopNavbar";
 import { Footer } from "@/components/veto/Footer";
 import { SosModal } from "@/components/veto/SosModal";
@@ -29,7 +31,9 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-type View = "landing" | "auth" | "dashboard" | "search";
+type View = "landing" | "auth" | "dashboard" | "search" | "news";
+
+const PROTECTED_MESSAGE = "Veuillez vous inscrire ou vous connecter pour accéder à ce service";
 
 function Index() {
   const { user, profile, loading } = useAuth();
@@ -37,15 +41,65 @@ function Index() {
   const view = history[history.length - 1];
   const [sosOpen, setSosOpen] = useState(false);
 
-  const navigate = (next: View) => setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
+  const navigate = (next: View) =>
+    setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
   const goBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
 
-  // Auto-redirect to dashboard once profile is loaded after login
-  const effectiveView: View = user && profile && view !== "search" ? "dashboard" : view;
+  const effectiveView: View =
+    user && profile && view !== "search" && view !== "news" ? "dashboard" : view;
 
   const goLanding = () => setHistory(["landing"]);
-  const goSearch = () => navigate("search");
   const goAuth = () => navigate("auth");
+  const goNews = () => navigate("news");
+
+  const requireAuth = (next: () => void) => {
+    if (!user) {
+      toast.error(PROTECTED_MESSAGE);
+      navigate("auth");
+      return;
+    }
+    next();
+  };
+
+  const handleFindClinic = () => requireAuth(() => navigate("search"));
+  const handleSos = () => requireAuth(() => setSosOpen(true));
+
+  const scrollToSection = (id: string) => {
+    if (effectiveView !== "landing") {
+      goLanding();
+      window.setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleNav = (key: "home" | "services" | "news") => {
+    if (key === "news") {
+      goNews();
+      return;
+    }
+    if (key === "home") {
+      goLanding();
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      return;
+    }
+    scrollToSection("services");
+  };
+
+  const handleFooterScroll = (key: "services" | "news" | "testimonials" | "home") => {
+    if (key === "news") {
+      goNews();
+      return;
+    }
+    if (key === "home") {
+      goLanding();
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      return;
+    }
+    scrollToSection(key);
+  };
 
   const BackButton = () =>
     effectiveView !== "landing" && history.length > 1 ? (
@@ -69,27 +123,43 @@ function Index() {
     );
   }
 
+  // SOS visible only when client connected
+  const showSos = !!user && profile?.role === "client";
+
   // Vet dashboard takes over the full screen
-  if (user && profile?.role === "veto" && view !== "search") {
+  if (user && profile?.role === "veto" && view !== "search" && view !== "news") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <TopNavbar onLogo={goLanding} onSearch={goSearch} onProfile={() => {}} />
+        <TopNavbar
+          onLogo={goLanding}
+          onNav={handleNav}
+          onProfile={() => {}}
+        />
         <BackButton />
-        <div className="flex-1"><VetoDashboard /></div>
-        <Footer onNavigate={(k) => navigate(k === "search" ? "search" : "landing")} />
+        <div className="flex-1">
+          <VetoDashboard />
+        </div>
+        <Footer
+          onNavigate={(k) => navigate(k === "search" ? "search" : k === "news" ? "news" : "landing")}
+          onScrollTo={handleFooterScroll}
+        />
         <Toaster />
       </div>
     );
   }
 
+  const navActive: "home" | "services" | "news" | undefined =
+    effectiveView === "news" ? "news" : effectiveView === "landing" ? "home" : undefined;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopNavbar
         onLogo={goLanding}
-        onSearch={goSearch}
+        onNav={handleNav}
         onProfile={user ? () => navigate("dashboard") : undefined}
         showAuth={!user}
         onAuth={goAuth}
+        active={navActive}
       />
 
       <BackButton />
@@ -103,27 +173,43 @@ function Index() {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            {effectiveView === "landing" && <Landing onStart={goAuth} />}
-            {effectiveView === "auth" && <AuthScreen onBack={goBack} onSuccess={() => navigate("dashboard")} />}
-            {effectiveView === "dashboard" && user && profile && <ClientDashboard onFindClinic={goSearch} />}
+            {effectiveView === "landing" && (
+              <Landing
+                onStart={goAuth}
+                onSeeServices={() => scrollToSection("services")}
+                onSeeNews={goNews}
+              />
+            )}
+            {effectiveView === "auth" && (
+              <AuthScreen onBack={goBack} onSuccess={() => navigate("dashboard")} />
+            )}
+            {effectiveView === "dashboard" && user && profile && (
+              <ClientDashboard onFindClinic={handleFindClinic} />
+            )}
             {effectiveView === "search" && <ClinicSearch />}
+            {effectiveView === "news" && <NewsView />}
           </motion.main>
         </AnimatePresence>
       </div>
 
-      <Footer onNavigate={(k) => navigate(k === "search" ? "search" : "landing")} />
+      <Footer
+        onNavigate={(k) => navigate(k === "search" ? "search" : k === "news" ? "news" : "landing")}
+        onScrollTo={handleFooterScroll}
+      />
 
-      <motion.button
-        onClick={() => setSosOpen(true)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full bg-brand-sos text-brand-sos-foreground shadow-lg flex flex-col items-center justify-center gap-0.5"
-        style={{ boxShadow: "0 10px 30px -8px oklch(0.7 0.085 20 / 0.6)" }}
-        aria-label="Urgences SOS"
-      >
-        <Phone className="h-5 w-5" />
-        <span className="text-[10px] font-bold tracking-wider">SOS</span>
-      </motion.button>
+      {showSos && (
+        <motion.button
+          onClick={handleSos}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full bg-brand-sos text-brand-sos-foreground shadow-lg flex flex-col items-center justify-center gap-0.5"
+          style={{ boxShadow: "0 10px 30px -8px oklch(0.7 0.085 20 / 0.6)" }}
+          aria-label="Urgences SOS"
+        >
+          <Phone className="h-5 w-5" />
+          <span className="text-[10px] font-bold tracking-wider">SOS</span>
+        </motion.button>
+      )}
 
       <SosModal open={sosOpen} onClose={() => setSosOpen(false)} />
       <Toaster />
