@@ -4,13 +4,14 @@ import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
   LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight,
-  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check,
+  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { VetoAdoptions } from "./VetoAdoptions";
 
 type Status = "waiting" | "in_progress" | "done";
 
@@ -120,12 +121,13 @@ function speciesIcon(species: string) {
   return Dog;
 }
 
-type Section = "overview" | "queue" | "patients" | "calendar" | "profile" | "settings";
+type Section = "overview" | "queue" | "patients" | "adoptions" | "calendar" | "profile" | "settings";
 
 const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
   { key: "queue", label: "File d'attente", icon: ListChecks },
   { key: "patients", label: "Gestion Patients", icon: Users },
+  { key: "adoptions", label: "Annonces Adoption", icon: Heart },
   { key: "calendar", label: "Calendrier", icon: Calendar },
   { key: "profile", label: "Mon Profil", icon: UserCog },
   { key: "settings", label: "Paramètres", icon: Settings },
@@ -205,6 +207,7 @@ export function VetoDashboard() {
                 />
               )}
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
+              {section === "adoptions" && <VetoAdoptions />}
               {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
               {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} />}
               {section === "settings" && <Placeholder title="Paramètres" icon={Settings} text="Bientôt : préférences, notifications et sécurité." />}
