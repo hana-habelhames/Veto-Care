@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      adoption_listings: {
+        Row: {
+          age: string | null
+          animal_name: string
+          breed: string | null
+          clinic_address: string | null
+          clinic_city: string | null
+          clinic_name: string | null
+          clinic_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          photo_url: string | null
+          species: string
+          status: string
+          updated_at: string
+          vet_id: string
+        }
+        Insert: {
+          age?: string | null
+          animal_name: string
+          breed?: string | null
+          clinic_address?: string | null
+          clinic_city?: string | null
+          clinic_name?: string | null
+          clinic_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_url?: string | null
+          species: string
+          status?: string
+          updated_at?: string
+          vet_id: string
+        }
+        Update: {
+          age?: string | null
+          animal_name?: string
+          breed?: string | null
+          clinic_address?: string | null
+          clinic_city?: string | null
+          clinic_name?: string | null
+          clinic_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          photo_url?: string | null
+          species?: string
+          status?: string
+          updated_at?: string
+          vet_id?: string
+        }
+        Relationships: []
+      }
       animals: {
         Row: {
           birth_date: string | null
