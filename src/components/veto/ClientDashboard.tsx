@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarPlus, Lightbulb, CheckCircle2,
   PawPrint, Stethoscope, Calendar as CalendarIcon,
-  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone,
+  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone, Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,11 @@ import { ARTICLES, type Animal, type Vet, type Article } from "./data";
 import { AnimalModal } from "./AnimalModal";
 import { ClinicPickerModal } from "./ClinicPickerModal";
 import { ArticleModal } from "./ArticleModal";
+import { AdoptionGallery } from "./AdoptionGallery";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-type Section = "rdv" | "clinics" | "animals" | "profile" | "settings" | "booking" | "conseils";
+type Section = "rdv" | "clinics" | "animals" | "profile" | "settings" | "booking" | "conseils" | "adopt";
 
 type Appointment = {
   id: string;
@@ -50,6 +51,7 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "booking", label: "Prendre RDV", icon: CalendarPlus },
   { key: "clinics", label: "Mes cliniques consultées", icon: Building2 },
   { key: "animals", label: "Mes animaux", icon: PawPrint },
+  { key: "adopt", label: "Adopter un compagnon", icon: Heart },
   { key: "conseils", label: "Conseils", icon: Lightbulb },
   { key: "profile", label: "Mon profil", icon: User },
   { key: "settings", label: "Paramètres & sécurité", icon: Settings },
@@ -113,6 +115,7 @@ export function ClientDashboard({ onFindClinic }: { onFindClinic: () => void }) 
               {section === "booking" && <BookingForm animals={animals} onBooked={() => { refresh(); setSection("rdv"); }} />}
               {section === "clinics" && <ConsultedClinics appointments={appointments} onFindClinic={onFindClinic} />}
               {section === "animals" && <AnimalsTab animals={animals} onChange={refresh} />}
+              {section === "adopt" && <AdoptionGallery />}
               {section === "conseils" && <ConseilsTab />}
               {section === "profile" && <ProfileTab />}
               {section === "settings" && <SettingsTab />}
