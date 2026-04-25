@@ -857,7 +857,7 @@ const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 
 type DaySchedule = { open: boolean; from: string; to: string };
 
-function ProfileForm({ initialClinic, initialEmail, initialPhone }: { initialClinic: string; initialEmail: string; initialPhone: string }) {
+function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashboard }: { initialClinic: string; initialEmail: string; initialPhone: string; onBackToDashboard?: () => void }) {
   const [clinic, setClinic] = useState(initialClinic);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
@@ -878,8 +878,17 @@ function ProfileForm({ initialClinic, initialEmail, initialPhone }: { initialCli
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-1">Mon Profil</h1>
-      <p className="text-muted-foreground mb-6">Informations publiques de votre clinique.</p>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-1">Mon Profil</h1>
+          <p className="text-muted-foreground">Informations publiques de votre clinique.</p>
+        </div>
+        {onBackToDashboard && (
+          <Button onClick={onBackToDashboard} variant="outline" className="rounded-xl gap-2 border-brand-accent text-brand-accent hover:bg-brand-soft">
+            <ArrowLeft className="h-4 w-4" /> Retour au Dashboard
+          </Button>
+        )}
+      </div>
 
       <form onSubmit={submit} className="space-y-6">
         <div className="bg-card rounded-xl p-6 md:p-8 border border-brand-border shadow-sm space-y-5">
