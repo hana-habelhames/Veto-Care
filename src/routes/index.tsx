@@ -12,7 +12,7 @@ import { NewsView } from "@/components/veto/NewsView";
 import { TopNavbar } from "@/components/veto/TopNavbar";
 import { Footer } from "@/components/veto/Footer";
 import { SosModal } from "@/components/veto/SosModal";
-import { Phone, ArrowLeft } from "lucide-react";
+import { Phone } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/")({
@@ -40,10 +40,17 @@ function Index() {
   const [history, setHistory] = useState<View[]>(["landing"]);
   const view = history[history.length - 1];
   const [sosOpen, setSosOpen] = useState(false);
+  const [profileTrigger, setProfileTrigger] = useState(0);
 
   const navigate = (next: View) =>
     setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
   const goBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+
+  const goProfile = () => {
+    // Switch back to dashboard view (if on search/news) and signal profile section
+    setHistory(["landing", "dashboard"]);
+    setProfileTrigger((n) => n + 1);
+  };
 
   const effectiveView: View =
     user && profile && view !== "search" && view !== "news" ? "dashboard" : view;
@@ -100,20 +107,6 @@ function Index() {
     }
     scrollToSection(key);
   };
-
-  const BackButton = () =>
-    effectiveView !== "landing" && history.length > 1 ? (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4">
-        <button
-          onClick={goBack}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-brand-title transition-colors rounded-xl px-3 py-2 hover:bg-brand-soft"
-          aria-label="Retour"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour
-        </button>
-      </div>
-    ) : null;
 
   if (loading) {
     return (
