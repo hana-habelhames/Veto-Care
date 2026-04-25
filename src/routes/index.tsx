@@ -126,11 +126,12 @@ function Index() {
         <TopNavbar
           onLogo={goLanding}
           onNav={handleNav}
-          onProfile={() => {}}
+          onProfile={goProfile}
+          userName={profile?.full_name}
+          userEmail={profile?.email}
         />
-        <BackButton />
         <div className="flex-1">
-          <VetoDashboard />
+          <VetoDashboard profileTrigger={profileTrigger} />
         </div>
         <Footer
           onNavigate={(k) => navigate(k === "search" ? "search" : k === "news" ? "news" : "landing")}
@@ -149,13 +150,13 @@ function Index() {
       <TopNavbar
         onLogo={goLanding}
         onNav={handleNav}
-        onProfile={user ? () => navigate("dashboard") : undefined}
+        onProfile={user ? goProfile : undefined}
         showAuth={!user}
         onAuth={goAuth}
         active={navActive}
+        userName={profile?.full_name}
+        userEmail={profile?.email}
       />
-
-      <BackButton />
 
       <div className="flex-1">
         <AnimatePresence mode="wait">
@@ -177,7 +178,7 @@ function Index() {
               <AuthScreen onBack={goBack} onSuccess={() => navigate("dashboard")} />
             )}
             {effectiveView === "dashboard" && user && profile && (
-              <ClientDashboard onFindClinic={handleFindClinic} />
+              <ClientDashboard onFindClinic={handleFindClinic} profileTrigger={profileTrigger} />
             )}
             {effectiveView === "search" && <ClinicSearch />}
             {effectiveView === "news" && <NewsView />}
