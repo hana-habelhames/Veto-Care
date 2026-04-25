@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
-  LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight,
+  LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight, ArrowLeft,
   Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -133,13 +133,17 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
 
-export function VetoDashboard() {
+export function VetoDashboard({ profileTrigger }: { profileTrigger?: number } = {}) {
   const { signOut, profile } = useAuth();
   const [section, setSection] = useState<Section>("queue");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [consultations, setConsultations] = useState<Consultation[]>(SEED);
   const [selected, setSelected] = useState<Consultation | null>(null);
   const [viewerDoc, setViewerDoc] = useState<{ name: string; url: string } | null>(null);
+
+  useEffect(() => {
+    if (profileTrigger && profileTrigger > 0) setSection("profile");
+  }, [profileTrigger]);
 
   const cycleStatus = (id: string) =>
     setConsultations((list) =>
@@ -209,7 +213,7 @@ export function VetoDashboard() {
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
               {section === "adoptions" && <VetoAdoptions />}
               {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
-              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} />}
+              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} onBackToDashboard={() => setSection("queue")} />}
               {section === "settings" && <Placeholder title="Paramètres" icon={Settings} text="Bientôt : préférences, notifications et sécurité." />}
             </motion.div>
           </AnimatePresence>
