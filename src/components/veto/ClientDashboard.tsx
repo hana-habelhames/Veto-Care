@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarPlus, Lightbulb, CheckCircle2,
   PawPrint, Stethoscope, Calendar as CalendarIcon,
-  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone, Heart,
+  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone, Heart, ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,12 +57,17 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "settings", label: "Paramètres & sécurité", icon: Settings },
 ];
 
-export function ClientDashboard({ onFindClinic }: { onFindClinic: () => void }) {
+export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic: () => void; profileTrigger?: number }) {
   const { profile, signOut } = useAuth();
   const [section, setSection] = useState<Section>("rdv");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [animals, setAnimals] = useState<DbAnimal[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  // React to header profile-icon clicks
+  useEffect(() => {
+    if (profileTrigger && profileTrigger > 0) setSection("profile");
+  }, [profileTrigger]);
 
   const firstName = profile?.full_name?.split(" ")[0] || "vous";
 
