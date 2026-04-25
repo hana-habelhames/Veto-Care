@@ -122,7 +122,7 @@ export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic
               {section === "animals" && <AnimalsTab animals={animals} onChange={refresh} />}
               {section === "adopt" && <AdoptionGallery />}
               {section === "conseils" && <ConseilsTab />}
-              {section === "profile" && <ProfileTab />}
+              {section === "profile" && <ProfileTab onBackToDashboard={() => setSection("rdv")} />}
               {section === "settings" && <SettingsTab />}
             </motion.div>
           </AnimatePresence>
@@ -438,7 +438,7 @@ function ConseilsTab() {
 }
 
 /* ---------- Profile ---------- */
-function ProfileTab() {
+function ProfileTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
   const { profile, refreshProfile } = useAuth();
   const [draft, setDraft] = useState({
     full_name: profile?.full_name ?? "",
@@ -470,7 +470,12 @@ function ProfileTab() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-6">Mon profil</h1>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <h1 className="text-2xl sm:text-3xl font-bold text-brand-title">Mon profil</h1>
+        <Button onClick={onBackToDashboard} variant="outline" className="rounded-xl gap-2 border-brand-accent text-brand-accent hover:bg-brand-soft">
+          <ArrowLeft className="h-4 w-4" /> Retour au Dashboard
+        </Button>
+      </div>
       <form onSubmit={save} className="bg-card rounded-xl p-6 md:p-8 border border-brand-border space-y-5 max-w-2xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
