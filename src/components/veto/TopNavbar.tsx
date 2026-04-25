@@ -1,7 +1,15 @@
-import { PawPrint, User, LogIn } from "lucide-react";
+import { PawPrint, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type NavKey = "home" | "services" | "news";
+
+function getInitials(name?: string | null, email?: string | null) {
+  const source = (name || email || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
 
 export function TopNavbar({
   onLogo,
@@ -10,6 +18,8 @@ export function TopNavbar({
   showAuth = false,
   onAuth,
   active,
+  userName,
+  userEmail,
 }: {
   onLogo: () => void;
   onNav?: (key: NavKey) => void;
@@ -17,12 +27,16 @@ export function TopNavbar({
   showAuth?: boolean;
   onAuth?: () => void;
   active?: NavKey;
+  userName?: string | null;
+  userEmail?: string | null;
 }) {
   const items: { key: NavKey; label: string }[] = [
     { key: "home", label: "Accueil" },
     { key: "services", label: "Nos Services" },
     { key: "news", label: "Actualités" },
   ];
+
+  const initials = getInitials(userName, userEmail);
 
   return (
     <header className="sticky top-0 z-30 bg-slate-800 text-slate-100 border-b border-slate-700/60 shadow-sm">
@@ -61,13 +75,14 @@ export function TopNavbar({
               <span className="sm:hidden">Connexion</span>
             </Button>
           )}
-          {onProfile && (
+          {onProfile && !showAuth && (
             <button
               onClick={onProfile}
-              className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              className="h-10 w-10 rounded-full bg-brand-accent text-white font-semibold text-sm flex items-center justify-center shadow-md ring-2 ring-white/10 hover:ring-white/30 transition-all hover:scale-105"
               aria-label="Mon profil"
+              title="Mon profil"
             >
-              <User className="h-5 w-5" />
+              {initials}
             </button>
           )}
         </div>
