@@ -316,7 +316,7 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
     if (!profile || !selectedClinic) { toast.error("Veuillez choisir une clinique"); return; }
     if (!animalText.trim()) { toast.error("Veuillez renseigner l'animal"); return; }
     setLoading(true);
-    const { error } = await supabase.from("appointments").insert({
+    const { data: inserted, error } = await supabase.from("appointments").insert({
       owner_id: profile.id,
       animal_id: null,
       clinic_id: selectedClinic.id,
@@ -329,9 +329,27 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
       appointment_time: time,
       reason: `[${consultType === "home" ? "À domicile" : "En clinique"}] ${animalText} — ${reason}`,
       status: "confirmed",
-    });
+    }).select("id").single();
     setLoading(false);
     if (error) { toast.error("Erreur", { description: error.message }); return; }
+
+    // Fire-and-forget notifications (best effort)
+    if (inserted?.id) {
+      try {
+        const { notifyAppointmentRequest } = await import("@/hooks/useNotifications");
+        await notifyAppointmentRequest({
+          ownerId: profile.id,
+          ownerName: profile.full_name || "Un client",
+          vetUserId: null,
+          appointmentId: inserted.id,
+          animalLabel: animalText,
+          clinicName: selectedClinic.clinic,
+          date,
+          time,
+        });
+      } catch { /* ignore */ }
+    }
+
     toast.success("Rendez-vous confirmé !", { description: `${selectedClinic.clinic} le ${date} à ${time}` });
     onBooked();
   };
