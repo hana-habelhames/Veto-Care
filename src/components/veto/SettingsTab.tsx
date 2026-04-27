@@ -198,7 +198,8 @@ function ProSettingsCard() {
 
   const togglePersist = async (field: "emergency_24_7" | "home_visit", value: boolean) => {
     if (!profile) return;
-    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", profile.id);
+    const payload = field === "emergency_24_7" ? { emergency_24_7: value } : { home_visit: value };
+    const { error } = await supabase.from("profiles").update(payload).eq("id", profile.id);
     if (error) { toast.error("Erreur", { description: error.message }); return; }
     await refreshProfile();
     toast.success("Paramètre enregistré");
