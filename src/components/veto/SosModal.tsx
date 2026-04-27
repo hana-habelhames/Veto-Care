@@ -1,14 +1,22 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, X, MapPin } from "lucide-react";
+import { Phone, X, MapPin, Copy, Check } from "lucide-react";
 import { CLINICS } from "./data";
 import { toast } from "sonner";
 
 export function SosModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const emergencyVets = CLINICS.filter((v) => v.emergency24);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const call = (name: string, phone: string) => {
-    toast.success(`Appel en cours...`, { description: `${name} — ${phone}` });
-    if (typeof window !== "undefined") window.location.href = `tel:${phone.replace(/\s/g, "")}`;
+  const copyPhone = async (id: string, name: string, phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setCopiedId(id);
+      toast.success("Numéro copié !", { description: `${name} — ${phone}` });
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    } catch {
+      toast.error("Impossible de copier le numéro");
+    }
   };
 
   return (
