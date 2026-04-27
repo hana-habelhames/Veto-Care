@@ -1,14 +1,22 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, X, MapPin } from "lucide-react";
+import { Phone, X, MapPin, Copy, Check } from "lucide-react";
 import { CLINICS } from "./data";
 import { toast } from "sonner";
 
 export function SosModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const emergencyVets = CLINICS.filter((v) => v.emergency24);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const call = (name: string, phone: string) => {
-    toast.success(`Appel en cours...`, { description: `${name} — ${phone}` });
-    if (typeof window !== "undefined") window.location.href = `tel:${phone.replace(/\s/g, "")}`;
+  const copyPhone = async (id: string, name: string, phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setCopiedId(id);
+      toast.success("Numéro copié !", { description: `${name} — ${phone}` });
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    } catch {
+      toast.error("Impossible de copier le numéro");
+    }
   };
 
   return (
@@ -58,10 +66,21 @@ export function SosModal({ open, onClose }: { open: boolean; onClose: () => void
                       </p>
                     </div>
                     <button
-                      onClick={() => call(v.name, v.phone)}
-                      className="flex items-center justify-center gap-2 bg-brand-sos text-brand-sos-foreground rounded-xl px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity shrink-0"
+                      onClick={() => copyPhone(v.id, v.name, v.phone)}
+                      title="Cliquer pour copier le numéro"
+                      className="flex items-center justify-center gap-2 bg-brand-sos text-brand-sos-foreground rounded-xl px-4 py-2.5 text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shrink-0"
                     >
-                      <Phone className="h-4 w-4" /> Appeler maintenant
+                      {copiedId === v.id ? (
+                        <>
+                          <Check className="h-4 w-4" /> Copié !
+                        </>
+                      ) : (
+                        <>
+                          <Phone className="h-4 w-4" />
+                          <span className="tabular-nums">{v.phone}</span>
+                          <Copy className="h-3.5 w-3.5 opacity-80" />
+                        </>
+                      )}
                     </button>
                   </div>
                 ))
