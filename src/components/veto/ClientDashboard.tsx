@@ -10,11 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ARTICLES, type Animal, type Vet, type Article } from "./data";
+import { ARTICLES, CLINICS, type Animal, type Vet, type Article } from "./data";
 import { AnimalModal } from "./AnimalModal";
-import { ClinicPickerModal } from "./ClinicPickerModal";
 import { ArticleModal } from "./ArticleModal";
 import { AdoptionGallery } from "./AdoptionGallery";
+import { SettingsTab } from "./SettingsTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -123,7 +123,7 @@ export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic
               {section === "adopt" && <AdoptionGallery />}
               {section === "conseils" && <ConseilsTab />}
               {section === "profile" && <ProfileTab onBackToDashboard={() => setSection("rdv")} />}
-              {section === "settings" && <SettingsTab />}
+              {section === "settings" && <SettingsTab role="client" />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -507,13 +507,3 @@ function ProfileTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
   );
 }
 
-function SettingsTab() {
-  return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-6">Paramètres & sécurité</h1>
-      <div className="bg-card rounded-xl p-6 md:p-8 border border-brand-border max-w-2xl">
-        <p className="text-muted-foreground">Bientôt : modification du mot de passe, notifications et préférences de confidentialité.</p>
-      </div>
-    </div>
-  );
-}
