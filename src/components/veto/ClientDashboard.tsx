@@ -10,11 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ARTICLES, type Animal, type Vet, type Article } from "./data";
+import { ARTICLES, CLINICS, type Animal, type Vet, type Article } from "./data";
 import { AnimalModal } from "./AnimalModal";
-import { ClinicPickerModal } from "./ClinicPickerModal";
 import { ArticleModal } from "./ArticleModal";
 import { AdoptionGallery } from "./AdoptionGallery";
+import { SettingsTab } from "./SettingsTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -123,7 +123,7 @@ export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic
               {section === "adopt" && <AdoptionGallery />}
               {section === "conseils" && <ConseilsTab />}
               {section === "profile" && <ProfileTab onBackToDashboard={() => setSection("rdv")} />}
-              {section === "settings" && <SettingsTab />}
+              {section === "settings" && <SettingsTab role="client" />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -259,69 +259,152 @@ function ConsultedClinics({ appointments, onFindClinic }: { appointments: Appoin
 }
 
 /* ---------- Booking ---------- */
+type ConsultType = "" | "home" | "clinic";
+
 function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () => void }) {
   const { profile } = useAuth();
-  const [animalId, setAnimalId] = useState(animals[0]?.id ?? "");
-  const [clinic, setClinic] = useState<Vet | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const [city, setCity] = useState("");
+  const [animalText, setAnimalText] = useState(
+    animals[0] ? `${animals[0].name} — ${animals[0].species}` : ""
+  );
+  const [consultType, setConsultType] = useState<ConsultType>("");
+  const [clinicId, setClinicId] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (animals[0] && !animalId) setAnimalId(animals[0].id); }, [animals, animalId]);
+  const cities = Array.from(new Set(CLINICS.map((c) => c.city))).sort();
+
+  const filteredClinics: Vet[] = CLINICS.filter((c) => {
+    if (!city || c.city.toLowerCase() !== city.toLowerCase()) return false;
+    if (consultType === "home" && !c.homeVisit) return false;
+    if (consultType === "clinic" && !c.walkIn) return false;
+    return true;
+  });
+
+  const clinicReady = !!city && !!consultType;
+  const selectedClinic = CLINICS.find((c) => c.id === clinicId) || null;
+
+  // Reset clinic when filters change
+  useEffect(() => { setClinicId(""); }, [city, consultType]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !clinic) { toast.error("Veuillez choisir une clinique"); return; }
+    if (!profile || !selectedClinic) { toast.error("Veuillez choisir une clinique"); return; }
+    if (!animalText.trim()) { toast.error("Veuillez renseigner l'animal"); return; }
     setLoading(true);
     const { error } = await supabase.from("appointments").insert({
       owner_id: profile.id,
-      animal_id: animalId || null,
-      clinic_id: clinic.id,
-      clinic_name: clinic.clinic,
-      clinic_city: clinic.city,
-      clinic_address: clinic.address,
-      clinic_phone: clinic.phone,
-      vet_name: clinic.name,
+      animal_id: null,
+      clinic_id: selectedClinic.id,
+      clinic_name: selectedClinic.clinic,
+      clinic_city: selectedClinic.city,
+      clinic_address: selectedClinic.address,
+      clinic_phone: selectedClinic.phone,
+      vet_name: selectedClinic.name,
       appointment_date: date,
       appointment_time: time,
-      reason,
+      reason: `[${consultType === "home" ? "À domicile" : "En clinique"}] ${animalText} — ${reason}`,
       status: "confirmed",
     });
     setLoading(false);
     if (error) { toast.error("Erreur", { description: error.message }); return; }
-    toast.success("Rendez-vous confirmé !", { description: `${clinic.clinic} le ${date} à ${time}` });
+    toast.success("Rendez-vous confirmé !", { description: `${selectedClinic.clinic} le ${date} à ${time}` });
     onBooked();
   };
 
   return (
     <div>
       <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-6">Prendre rendez-vous</h1>
-      <form onSubmit={submit} className="bg-card rounded-xl p-6 md:p-8 border border-brand-border space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-brand-title text-sm flex items-center gap-1.5"><PawPrint className="h-3.5 w-3.5" /> Animal *</Label>
-            <select value={animalId} onChange={(e) => setAnimalId(e.target.value)} required className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-brand-title focus:outline-none focus:ring-2 focus:ring-brand-accent/40">
-              {animals.length === 0 && <option value="">Ajoutez d'abord un animal</option>}
-              {animals.map((a) => (
-                <option key={a.id} value={a.id}>{a.name} {a.species && `— ${a.species}`}</option>
+      <form onSubmit={submit} className="bg-card rounded-2xl p-6 md:p-8 border border-brand-border space-y-5">
+        {/* 1. City */}
+        <div className="space-y-1.5">
+          <Label className="text-brand-title text-sm flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> Ville *</Label>
+          <input
+            list="city-options"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Ex : Alger, Oran, Constantine..."
+            required
+            className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-brand-title focus:outline-none focus:ring-2 focus:ring-brand-accent/40"
+          />
+          <datalist id="city-options">
+            {cities.map((c) => <option key={c} value={c} />)}
+          </datalist>
+        </div>
+
+        {/* 2. Animal — free text */}
+        <div className="space-y-1.5">
+          <Label className="text-brand-title text-sm flex items-center gap-1.5"><PawPrint className="h-3.5 w-3.5" /> Animal *</Label>
+          <Input
+            value={animalText}
+            onChange={(e) => setAnimalText(e.target.value)}
+            placeholder="Ex : Chat, Chien, Lapin, Perroquet..."
+            required
+            className="rounded-xl"
+          />
+          <p className="text-[11px] text-muted-foreground">Indiquez l'espèce ou le nom + espèce de votre animal.</p>
+        </div>
+
+        {/* 3. Consultation type */}
+        <div className="space-y-2">
+          <Label className="text-brand-title text-sm flex items-center gap-1.5"><Stethoscope className="h-3.5 w-3.5" /> Type de consultation *</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              { v: "home" as const, label: "À domicile", desc: "Le vétérinaire se déplace chez vous" },
+              { v: "clinic" as const, label: "En clinique", desc: "Je me déplace au cabinet" },
+            ].map((opt) => {
+              const active = consultType === opt.v;
+              return (
+                <button
+                  type="button"
+                  key={opt.v}
+                  onClick={() => setConsultType(opt.v)}
+                  className={`text-left rounded-xl border px-4 py-3 transition-all ${
+                    active
+                      ? "border-brand-accent bg-brand-soft ring-2 ring-brand-accent/30"
+                      : "border-brand-border hover:border-brand-accent/60 bg-background"
+                  }`}
+                >
+                  <p className={`text-sm font-semibold ${active ? "text-brand-accent" : "text-brand-title"}`}>{opt.label}</p>
+                  <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. Clinic — dynamic */}
+        <div className="space-y-1.5">
+          <Label className="text-brand-title text-sm flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Clinique *</Label>
+          {!clinicReady ? (
+            <div className="w-full rounded-xl border border-dashed border-brand-border bg-brand-soft/30 px-4 py-3 text-sm text-muted-foreground italic">
+              Veuillez d'abord choisir une ville et un type de consultation
+            </div>
+          ) : filteredClinics.length === 0 ? (
+            <div className="w-full rounded-xl border border-dashed border-brand-border bg-brand-soft/30 px-4 py-3 text-sm text-muted-foreground italic">
+              Aucune clinique disponible à {city} pour ce type de consultation. Essayez une autre ville.
+            </div>
+          ) : (
+            <select
+              value={clinicId}
+              onChange={(e) => setClinicId(e.target.value)}
+              required
+              className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-brand-title focus:outline-none focus:ring-2 focus:ring-brand-accent/40"
+            >
+              <option value="">Sélectionnez une clinique...</option>
+              {filteredClinics.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.clinic} — {c.name}{c.emergency24 ? " · Urgences 24/7" : ""}
+                </option>
               ))}
             </select>
-          </div>
+          )}
+        </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-brand-title text-sm flex items-center gap-1.5"><Stethoscope className="h-3.5 w-3.5" /> Clinique *</Label>
-            <button type="button" onClick={() => setPickerOpen(true)} className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-left flex items-center justify-between hover:border-brand-accent transition-colors">
-              {clinic ? (
-                <span className="text-brand-title truncate">{clinic.clinic} — {clinic.city}</span>
-              ) : (
-                <span className="text-muted-foreground">Choisir une clinique...</span>
-              )}
-              <Building2 className="h-4 w-4 text-brand-accent shrink-0" />
-            </button>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-brand-title text-sm">Date *</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().slice(0, 10)} required className="rounded-xl" />
@@ -337,12 +420,10 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} required placeholder="Décrivez les symptômes ou la raison de la visite..." className="rounded-xl resize-none" />
         </div>
 
-        <Button type="submit" disabled={loading || !clinic} size="lg" className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
+        <Button type="submit" disabled={loading || !selectedClinic} size="lg" className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
           {loading ? "Envoi..." : "Confirmer le rendez-vous"}
         </Button>
       </form>
-
-      <ClinicPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={setClinic} />
     </div>
   );
 }
@@ -507,13 +588,3 @@ function ProfileTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
   );
 }
 
-function SettingsTab() {
-  return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-brand-title mb-6">Paramètres & sécurité</h1>
-      <div className="bg-card rounded-xl p-6 md:p-8 border border-brand-border max-w-2xl">
-        <p className="text-muted-foreground">Bientôt : modification du mot de passe, notifications et préférences de confidentialité.</p>
-      </div>
-    </div>
-  );
-}
