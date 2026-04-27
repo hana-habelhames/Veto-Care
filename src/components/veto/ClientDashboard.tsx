@@ -280,7 +280,7 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
   const filteredClinics: Vet[] = CLINICS.filter((c) => {
     if (!city || c.city.toLowerCase() !== city.toLowerCase()) return false;
     if (consultType === "home" && !c.homeVisit) return false;
-    if (consultType === "clinic" && c.homeVisit === undefined ? false : (consultType === "clinic" && !c.walkIn)) return false;
+    if (consultType === "clinic" && !c.walkIn) return false;
     return true;
   });
 
