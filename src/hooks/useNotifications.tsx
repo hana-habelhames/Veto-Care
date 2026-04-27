@@ -81,7 +81,14 @@ export async function notifyAppointmentRequest(opts: {
   time: string;
 }) {
   const { ownerId, ownerName, vetUserId, appointmentId, animalLabel, clinicName, date, time } = opts;
-  const rows: Array<Record<string, unknown>> = [];
+  type NotifInsert = {
+    user_id: string;
+    type: string;
+    title: string;
+    body: string;
+    related_appointment_id: string;
+  };
+  const rows: NotifInsert[] = [];
 
   // Client side — confirmation that the request was placed (treated as confirmed in this demo)
   rows.push({
