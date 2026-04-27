@@ -134,7 +134,15 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
 
-export function VetoDashboard({ profileTrigger }: { profileTrigger?: number } = {}) {
+type SectionTrigger = { key: string; n: number };
+
+export function VetoDashboard({
+  profileTrigger, settingsTrigger, sectionTrigger,
+}: {
+  profileTrigger?: number;
+  settingsTrigger?: number;
+  sectionTrigger?: SectionTrigger;
+} = {}) {
   const { signOut, profile } = useAuth();
   const [section, setSection] = useState<Section>("queue");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -145,6 +153,17 @@ export function VetoDashboard({ profileTrigger }: { profileTrigger?: number } = 
   useEffect(() => {
     if (profileTrigger && profileTrigger > 0) setSection("profile");
   }, [profileTrigger]);
+  useEffect(() => {
+    if (settingsTrigger && settingsTrigger > 0) setSection("settings");
+  }, [settingsTrigger]);
+  useEffect(() => {
+    if (sectionTrigger && sectionTrigger.n > 0) {
+      const k = sectionTrigger.key as Section;
+      if (["overview", "queue", "patients", "adoptions", "calendar"].includes(k)) {
+        setSection(k);
+      }
+    }
+  }, [sectionTrigger]);
 
   const cycleStatus = (id: string) =>
     setConsultations((list) =>

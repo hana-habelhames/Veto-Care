@@ -5,12 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Animal } from "./data";
 
-const SPECIES = ["Chat", "Chien", "NAC"];
-const BREEDS: Record<string, string[]> = {
-  Chat: ["Européen", "Maine Coon", "Siamois", "Persan", "Bengal", "Autre"],
-  Chien: ["Labrador", "Golden Retriever", "Berger allemand", "Bouledogue", "Caniche", "Autre"],
-  NAC: ["Lapin", "Cochon d'Inde", "Hamster", "Furet", "Perroquet", "Autre"],
-};
 
 export function AnimalModal({
   open,
@@ -114,26 +108,21 @@ export function AnimalModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-brand-title text-sm">Espèce *</Label>
-                    <select
+                    <Input
                       value={species}
-                      onChange={(e) => { setSpecies(e.target.value); setBreed(""); }}
-                      className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-brand-title focus:outline-none focus:ring-2 focus:ring-brand-accent/40"
-                    >
-                      <option value="">Sélectionner</option>
-                      {SPECIES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                      onChange={(e) => setSpecies(e.target.value)}
+                      placeholder="Ex. Chien, Chat, Lapin..."
+                      className="rounded-xl"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-brand-title text-sm">Race *</Label>
-                    <select
+                    <Input
                       value={breed}
                       onChange={(e) => setBreed(e.target.value)}
-                      disabled={!species}
-                      className="w-full h-10 rounded-xl border border-brand-border bg-background px-3 text-sm text-brand-title focus:outline-none focus:ring-2 focus:ring-brand-accent/40 disabled:opacity-50"
-                    >
-                      <option value="">Sélectionner</option>
-                      {(BREEDS[species] ?? []).map((b) => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                      placeholder="Ex. Berger Allemand, Siamois..."
+                      className="rounded-xl"
+                    />
                   </div>
                 </div>
               </Section>

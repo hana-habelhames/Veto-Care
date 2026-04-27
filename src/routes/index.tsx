@@ -9,11 +9,13 @@ import { ClientDashboard } from "@/components/veto/ClientDashboard";
 import { VetoDashboard } from "@/components/veto/VetoDashboard";
 import { ClinicSearch } from "@/components/veto/ClinicSearch";
 import { NewsView } from "@/components/veto/NewsView";
-import { TopNavbar } from "@/components/veto/TopNavbar";
+import { TopNavbar, type AnyNavKey } from "@/components/veto/TopNavbar";
 import { Footer } from "@/components/veto/Footer";
 import { SosModal } from "@/components/veto/SosModal";
+import { NotificationsPage } from "@/components/veto/NotificationsPage";
 import { Phone } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,29 +33,22 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-type View = "landing" | "auth" | "dashboard" | "search" | "news";
+type View = "landing" | "auth" | "dashboard" | "search" | "news" | "notifications";
 
 const PROTECTED_MESSAGE = "Veuillez vous inscrire ou vous connecter pour accéder à ce service";
 
 function Index() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const [history, setHistory] = useState<View[]>(["landing"]);
   const view = history[history.length - 1];
   const [sosOpen, setSosOpen] = useState(false);
   const [profileTrigger, setProfileTrigger] = useState(0);
+  const [settingsTrigger, setSettingsTrigger] = useState(0);
+  const [sectionTrigger, setSectionTrigger] = useState<{ key: string; n: number }>({ key: "", n: 0 });
 
   const navigate = (next: View) =>
     setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
   const goBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
-
-  const goProfile = () => {
-    // Switch back to dashboard view (if on search/news) and signal profile section
-    setHistory(["landing", "dashboard"]);
-    setProfileTrigger((n) => n + 1);
-  };
-
-  const effectiveView: View =
-    user && profile && view !== "search" && view !== "news" ? "dashboard" : view;
 
   const goLanding = () => setHistory(["landing"]);
   const goAuth = () => navigate("auth");
@@ -71,8 +66,45 @@ function Index() {
   const handleFindClinic = () => requireAuth(() => navigate("search"));
   const handleSos = () => requireAuth(() => setSosOpen(true));
 
+  const goLogo = () => {
+    // Goes to the appropriate "home" depending on role
+    if (user && profile) {
+      setHistory(["landing", "dashboard"]);
+    } else {
+      goLanding();
+    }
+  };
+
+  const triggerSection = (key: string) => {
+    setHistory(["landing", "dashboard"]);
+    setSectionTrigger({ key, n: sectionTrigger.n + 1 });
+  };
+
+  const goProfile = () => {
+    setHistory(["landing", "dashboard"]);
+    setProfileTrigger((n) => n + 1);
+  };
+  const goSettings = () => {
+    setHistory(["landing", "dashboard"]);
+    setSettingsTrigger((n) => n + 1);
+  };
+  const goNotifications = () => navigate("notifications");
+
+  const handleLogout = async () => {
+    await signOut();
+    goLanding();
+    toast.success("Déconnecté");
+  };
+
+  const handleUserMenu = (k: "profile" | "settings" | "logout" | "notifications") => {
+    if (k === "profile") goProfile();
+    else if (k === "settings") goSettings();
+    else if (k === "logout") handleLogout();
+    else if (k === "notifications") goNotifications();
+  };
+
   const scrollToSection = (id: string) => {
-    if (effectiveView !== "landing") {
+    if (view !== "landing") {
       goLanding();
       window.setTimeout(() => {
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -82,30 +114,46 @@ function Index() {
     }
   };
 
-  const handleNav = (key: "home" | "services" | "news") => {
-    if (key === "news") {
-      goNews();
-      return;
-    }
-    if (key === "home") {
+  const handleGuestNav = (k: "home" | "how" | "services" | "partner") => {
+    if (k === "home") {
       goLanding();
       window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
       return;
     }
-    scrollToSection("services");
+    if (k === "how") scrollToSection("how-it-works");
+    else if (k === "services") scrollToSection("services");
+    else if (k === "partner") scrollToSection("partner");
+  };
+
+  const handleClientNav = (k: "dashboard" | "animals" | "booking" | "sos" | "adopt") => {
+    if (k === "sos") { handleSos(); return; }
+    if (k === "dashboard") { setHistory(["landing", "dashboard"]); setSectionTrigger({ key: "rdv", n: sectionTrigger.n + 1 }); return; }
+    triggerSection(k === "booking" ? "booking" : k === "animals" ? "animals" : "adopt");
+  };
+
+  const handleVetoNav = (k: "calendar" | "patients" | "requests" | "emergency") => {
+    if (k === "calendar") triggerSection("calendar");
+    else if (k === "patients") triggerSection("patients");
+    else if (k === "requests") triggerSection("queue");
+    else if (k === "emergency") triggerSection("queue"); // urgent items live in queue
   };
 
   const handleFooterScroll = (key: "services" | "news" | "testimonials" | "home") => {
-    if (key === "news") {
-      goNews();
-      return;
-    }
+    if (key === "news") { goNews(); return; }
     if (key === "home") {
       goLanding();
       window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
       return;
     }
     scrollToSection(key);
+  };
+
+  const toggleVetAvailable = async () => {
+    if (!profile) return;
+    const next = !profile.emergency_24_7;
+    await supabase.from("profiles").update({ emergency_24_7: next }).eq("id", profile.id);
+    await refreshProfile();
+    toast.success(next ? "Vous êtes maintenant disponible pour les urgences" : "Mode urgences désactivé");
   };
 
   if (loading) {
@@ -116,22 +164,33 @@ function Index() {
     );
   }
 
-  // SOS visible only when client connected
-  const showSos = !!user && profile?.role === "client";
+  // Determine role + active nav key
+  const role: "guest" | "client" | "veto" = !user || !profile
+    ? "guest"
+    : profile.role === "veto" ? "veto" : "client";
+
+  const showSos = role === "client";
+
+  let active: AnyNavKey | undefined;
+  if (role === "guest") active = view === "landing" ? "home" : undefined;
 
   // Vet dashboard takes over the full screen
-  if (user && profile?.role === "veto" && view !== "search" && view !== "news") {
+  if (user && profile?.role === "veto" && view !== "search" && view !== "news" && view !== "auth" && view !== "notifications") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <TopNavbar
-          onLogo={goLanding}
-          onNav={handleNav}
-          onProfile={goProfile}
+          role="veto"
+          onLogo={goLogo}
+          onVetoNav={handleVetoNav}
+          onUserMenu={handleUserMenu}
+          onSeeAllNotifications={goNotifications}
           userName={profile?.full_name}
           userEmail={profile?.email}
+          vetAvailable={!!profile?.emergency_24_7}
+          onToggleVetAvailable={toggleVetAvailable}
         />
         <div className="flex-1">
-          <VetoDashboard profileTrigger={profileTrigger} />
+          <VetoDashboard profileTrigger={profileTrigger} settingsTrigger={settingsTrigger} sectionTrigger={sectionTrigger} />
         </div>
         <Footer
           onNavigate={(k) => navigate(k === "search" ? "search" : k === "news" ? "news" : "landing")}
@@ -142,18 +201,18 @@ function Index() {
     );
   }
 
-  const navActive: "home" | "services" | "news" | undefined =
-    effectiveView === "news" ? "news" : effectiveView === "landing" ? "home" : undefined;
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopNavbar
-        onLogo={goLanding}
-        onNav={handleNav}
-        onProfile={user ? goProfile : undefined}
-        showAuth={!user}
+        role={role}
+        onLogo={goLogo}
+        onGuestNav={role === "guest" ? handleGuestNav : undefined}
+        onClientNav={role === "client" ? handleClientNav : undefined}
+        onUserMenu={handleUserMenu}
         onAuth={goAuth}
-        active={navActive}
+        onRegister={goAuth}
+        onSeeAllNotifications={goNotifications}
+        active={active}
         userName={profile?.full_name}
         userEmail={profile?.email}
       />
@@ -161,27 +220,33 @@ function Index() {
       <div className="flex-1">
         <AnimatePresence mode="wait">
           <motion.main
-            key={effectiveView}
+            key={view}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            {effectiveView === "landing" && (
+            {view === "landing" && (
               <Landing
                 onStart={goAuth}
                 onSeeServices={() => scrollToSection("services")}
                 onSeeNews={goNews}
               />
             )}
-            {effectiveView === "auth" && (
+            {view === "auth" && (
               <AuthScreen onBack={goBack} onSuccess={() => navigate("dashboard")} />
             )}
-            {effectiveView === "dashboard" && user && profile && (
-              <ClientDashboard onFindClinic={handleFindClinic} profileTrigger={profileTrigger} />
+            {view === "dashboard" && user && profile && (
+              <ClientDashboard
+                onFindClinic={handleFindClinic}
+                profileTrigger={profileTrigger}
+                settingsTrigger={settingsTrigger}
+                sectionTrigger={sectionTrigger}
+              />
             )}
-            {effectiveView === "search" && <ClinicSearch />}
-            {effectiveView === "news" && <NewsView />}
+            {view === "search" && <ClinicSearch />}
+            {view === "news" && <NewsView />}
+            {view === "notifications" && <NotificationsPage onBack={goBack} />}
           </motion.main>
         </AnimatePresence>
       </div>

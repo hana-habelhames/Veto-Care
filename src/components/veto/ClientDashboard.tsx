@@ -57,17 +57,38 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "settings", label: "Paramètres & sécurité", icon: Settings },
 ];
 
-export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic: () => void; profileTrigger?: number }) {
+type SectionTrigger = { key: string; n: number };
+
+export function ClientDashboard({
+  onFindClinic, profileTrigger, settingsTrigger, sectionTrigger,
+}: {
+  onFindClinic: () => void;
+  profileTrigger?: number;
+  settingsTrigger?: number;
+  sectionTrigger?: SectionTrigger;
+}) {
   const { profile, signOut } = useAuth();
   const [section, setSection] = useState<Section>("rdv");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [animals, setAnimals] = useState<DbAnimal[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // React to header profile-icon clicks
+  // React to header user-menu / nav clicks
   useEffect(() => {
     if (profileTrigger && profileTrigger > 0) setSection("profile");
   }, [profileTrigger]);
+  useEffect(() => {
+    if (settingsTrigger && settingsTrigger > 0) setSection("settings");
+  }, [settingsTrigger]);
+  useEffect(() => {
+    if (sectionTrigger && sectionTrigger.n > 0) {
+      const k = sectionTrigger.key as Section;
+      // valid sections allowed via header nav
+      if (["rdv", "booking", "animals", "adopt", "clinics", "conseils"].includes(k)) {
+        setSection(k);
+      }
+    }
+  }, [sectionTrigger]);
 
   const firstName = profile?.full_name?.split(" ")[0] || "vous";
 
@@ -295,7 +316,7 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
     if (!profile || !selectedClinic) { toast.error("Veuillez choisir une clinique"); return; }
     if (!animalText.trim()) { toast.error("Veuillez renseigner l'animal"); return; }
     setLoading(true);
-    const { error } = await supabase.from("appointments").insert({
+    const { data: inserted, error } = await supabase.from("appointments").insert({
       owner_id: profile.id,
       animal_id: null,
       clinic_id: selectedClinic.id,
@@ -308,9 +329,27 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
       appointment_time: time,
       reason: `[${consultType === "home" ? "À domicile" : "En clinique"}] ${animalText} — ${reason}`,
       status: "confirmed",
-    });
+    }).select("id").single();
     setLoading(false);
     if (error) { toast.error("Erreur", { description: error.message }); return; }
+
+    // Fire-and-forget notifications (best effort)
+    if (inserted?.id) {
+      try {
+        const { notifyAppointmentRequest } = await import("@/hooks/useNotifications");
+        await notifyAppointmentRequest({
+          ownerId: profile.id,
+          ownerName: profile.full_name || "Un client",
+          vetUserId: null,
+          appointmentId: inserted.id,
+          animalLabel: animalText,
+          clinicName: selectedClinic.clinic,
+          date,
+          time,
+        });
+      } catch { /* ignore */ }
+    }
+
     toast.success("Rendez-vous confirmé !", { description: `${selectedClinic.clinic} le ${date} à ${time}` });
     onBooked();
   };
