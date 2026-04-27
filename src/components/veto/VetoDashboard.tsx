@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { VetoAdoptions } from "./VetoAdoptions";
+import { SettingsTab } from "./SettingsTab";
 
 type Status = "waiting" | "in_progress" | "done";
 
@@ -214,7 +215,7 @@ export function VetoDashboard({ profileTrigger }: { profileTrigger?: number } = 
               {section === "adoptions" && <VetoAdoptions />}
               {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
               {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} onBackToDashboard={() => setSection("queue")} />}
-              {section === "settings" && <Placeholder title="Paramètres" icon={Settings} text="Bientôt : préférences, notifications et sécurité." />}
+              {section === "settings" && <SettingsTab role="veto" />}
             </motion.div>
           </AnimatePresence>
         </main>
