@@ -66,10 +66,21 @@ export function SosModal({ open, onClose }: { open: boolean; onClose: () => void
                       </p>
                     </div>
                     <button
-                      onClick={() => call(v.name, v.phone)}
-                      className="flex items-center justify-center gap-2 bg-brand-sos text-brand-sos-foreground rounded-xl px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity shrink-0"
+                      onClick={() => copyPhone(v.id, v.name, v.phone)}
+                      title="Cliquer pour copier le numéro"
+                      className="flex items-center justify-center gap-2 bg-brand-sos text-brand-sos-foreground rounded-xl px-4 py-2.5 text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shrink-0"
                     >
-                      <Phone className="h-4 w-4" /> Appeler maintenant
+                      {copiedId === v.id ? (
+                        <>
+                          <Check className="h-4 w-4" /> Copié !
+                        </>
+                      ) : (
+                        <>
+                          <Phone className="h-4 w-4" />
+                          <span className="tabular-nums">{v.phone}</span>
+                          <Copy className="h-3.5 w-3.5 opacity-80" />
+                        </>
+                      )}
                     </button>
                   </div>
                 ))
