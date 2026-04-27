@@ -57,17 +57,38 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "settings", label: "Paramètres & sécurité", icon: Settings },
 ];
 
-export function ClientDashboard({ onFindClinic, profileTrigger }: { onFindClinic: () => void; profileTrigger?: number }) {
+type SectionTrigger = { key: string; n: number };
+
+export function ClientDashboard({
+  onFindClinic, profileTrigger, settingsTrigger, sectionTrigger,
+}: {
+  onFindClinic: () => void;
+  profileTrigger?: number;
+  settingsTrigger?: number;
+  sectionTrigger?: SectionTrigger;
+}) {
   const { profile, signOut } = useAuth();
   const [section, setSection] = useState<Section>("rdv");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [animals, setAnimals] = useState<DbAnimal[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // React to header profile-icon clicks
+  // React to header user-menu / nav clicks
   useEffect(() => {
     if (profileTrigger && profileTrigger > 0) setSection("profile");
   }, [profileTrigger]);
+  useEffect(() => {
+    if (settingsTrigger && settingsTrigger > 0) setSection("settings");
+  }, [settingsTrigger]);
+  useEffect(() => {
+    if (sectionTrigger && sectionTrigger.n > 0) {
+      const k = sectionTrigger.key as Section;
+      // valid sections allowed via header nav
+      if (["rdv", "booking", "animals", "adopt", "clinics", "conseils"].includes(k)) {
+        setSection(k);
+      }
+    }
+  }, [sectionTrigger]);
 
   const firstName = profile?.full_name?.split(" ")[0] || "vous";
 
