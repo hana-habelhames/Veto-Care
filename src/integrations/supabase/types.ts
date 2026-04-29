@@ -68,6 +68,53 @@ export type Database = {
         }
         Relationships: []
       }
+      animal_documents: {
+        Row: {
+          animal_id: string
+          category: string
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          owner_id: string
+          public_url: string
+          size_bytes: number | null
+          storage_path: string
+        }
+        Insert: {
+          animal_id: string
+          category?: string
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          owner_id: string
+          public_url: string
+          size_bytes?: number | null
+          storage_path: string
+        }
+        Update: {
+          animal_id?: string
+          category?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          owner_id?: string
+          public_url?: string
+          size_bytes?: number | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animal_documents_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       animals: {
         Row: {
           birth_date: string | null

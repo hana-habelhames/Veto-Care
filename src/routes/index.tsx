@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
@@ -45,6 +45,14 @@ function Index() {
   const [profileTrigger, setProfileTrigger] = useState(0);
   const [settingsTrigger, setSettingsTrigger] = useState(0);
   const [sectionTrigger, setSectionTrigger] = useState<{ key: string; n: number }>({ key: "", n: 0 });
+
+  // After logout (user becomes null), force-redirect to the public landing.
+  useEffect(() => {
+    if (!loading && !user) {
+      setHistory(["landing"]);
+      setSosOpen(false);
+    }
+  }, [user, loading]);
 
   const navigate = (next: View) =>
     setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
@@ -114,15 +122,17 @@ function Index() {
     }
   };
 
-  const handleGuestNav = (k: "home" | "how" | "services" | "partner") => {
+  const handleGuestNav = (k: "home" | "services" | "emergency") => {
     if (k === "home") {
       goLanding();
       window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
       return;
     }
-    if (k === "how") scrollToSection("how-it-works");
-    else if (k === "services") scrollToSection("services");
-    else if (k === "partner") scrollToSection("partner");
+    if (k === "services") scrollToSection("services");
+    else if (k === "emergency") {
+      toast.error(PROTECTED_MESSAGE);
+      navigate("auth");
+    }
   };
 
   const handleClientNav = (k: "dashboard" | "animals" | "booking" | "sos" | "adopt") => {

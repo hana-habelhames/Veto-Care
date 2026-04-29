@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, PawPrint } from "lucide-react";
+import { X, PawPrint, NotebookText, Upload, FileText, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Animal } from "./data";
 
+export type PendingDoc = { file: File; category: "health_book" | "other" };
 
 export function AnimalModal({
   open,
@@ -13,7 +14,7 @@ export function AnimalModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (animal: Animal) => void;
+  onSave: (animal: Animal, docs: PendingDoc[]) => void;
 }) {
   const [sex, setSex] = useState<"M" | "F" | "">("");
   const [name, setName] = useState("");
@@ -22,11 +23,12 @@ export function AnimalModal({
   const [breed, setBreed] = useState("");
   const [insured, setInsured] = useState<boolean | null>(null);
   const [sterilized, setSterilized] = useState<boolean | null>(null);
+  const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
 
   useEffect(() => {
     if (!open) {
       setSex(""); setName(""); setBirthDate(""); setSpecies("");
-      setBreed(""); setInsured(null); setSterilized(null);
+      setBreed(""); setInsured(null); setSterilized(null); setPendingDocs([]);
     }
   }, [open]);
 
@@ -45,9 +47,16 @@ export function AnimalModal({
       birthDate,
       insured: !!insured,
       sterilized: !!sterilized,
-    });
+    }, pendingDocs);
     onClose();
   };
+
+  const addFiles = (files: FileList | null, category: "health_book" | "other") => {
+    if (!files) return;
+    const next: PendingDoc[] = Array.from(files).map((file) => ({ file, category }));
+    setPendingDocs((p) => [...p, ...next]);
+  };
+  const removeDoc = (idx: number) => setPendingDocs((p) => p.filter((_, i) => i !== idx));
 
   return (
     <AnimatePresence>
@@ -142,6 +151,42 @@ export function AnimalModal({
                   onChange={(v) => setSterilized(v === "yes")}
                 />
               </Section>
+
+              {/* Documents */}
+              <Section title="Mes documents associés">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <FileSlot
+                    label="Carnet de santé"
+                    icon={NotebookText}
+                    onPick={(files) => addFiles(files, "health_book")}
+                  />
+                  <FileSlot
+                    label="Autres documents"
+                    icon={Upload}
+                    multiple
+                    onPick={(files) => addFiles(files, "other")}
+                  />
+                </div>
+                {pendingDocs.length > 0 && (
+                  <ul className="space-y-1.5 pt-1">
+                    {pendingDocs.map((d, i) => (
+                      <li key={i} className="flex items-center gap-2 rounded-lg border border-brand-border bg-background px-3 py-2 text-xs">
+                        {d.category === "health_book" ? (
+                          <NotebookText className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-brand-accent shrink-0" />
+                        )}
+                        <span className="flex-1 truncate text-brand-title">{d.file.name}</span>
+                        <span className="text-muted-foreground">{Math.round(d.file.size / 1024)} Ko</span>
+                        <button type="button" onClick={() => removeDoc(i)} className="text-rose-600 hover:bg-rose-50 rounded p-1">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[11px] text-muted-foreground">Les documents seront automatiquement associés à cet animal et accessibles depuis « Mes documents associés ».</p>
+              </Section>
             </div>
 
             {/* Footer */}
@@ -213,5 +258,21 @@ function RadioRow({
         })}
       </div>
     </div>
+  );
+}
+
+function FileSlot({ label, icon: Icon, multiple, onPick }: { label: string; icon: React.ComponentType<{ className?: string }>; multiple?: boolean; onPick: (files: FileList | null) => void }) {
+  return (
+    <label className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-border bg-background hover:border-brand-accent/60 hover:bg-brand-soft/40 cursor-pointer h-20 px-3 text-sm text-brand-title transition-colors">
+      <Icon className="h-4 w-4 text-brand-accent" />
+      <span className="font-medium">{label}</span>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => { onPick(e.target.files); e.target.value = ""; }}
+      />
+    </label>
   );
 }

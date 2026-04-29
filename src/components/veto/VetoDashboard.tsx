@@ -4,7 +4,7 @@ import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
   LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight, ArrowLeft,
-  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart,
+  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart, NotebookText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { VetoAdoptions } from "./VetoAdoptions";
 import { SettingsTab } from "./SettingsTab";
+import { VetoCalendar, type CalendarEvent } from "./VetoCalendar";
+import { supabase } from "@/integrations/supabase/client";
 
 type Status = "waiting" | "in_progress" | "done";
 
@@ -232,8 +234,8 @@ export function VetoDashboard({
               )}
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
               {section === "adoptions" && <VetoAdoptions />}
-              {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
-              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} onBackToDashboard={() => setSection("queue")} />}
+              {section === "calendar" && <VetoCalendar events={consultationsToEvents(consultations)} />}
+              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} profileId={profile?.id ?? null} onBackToDashboard={() => setSection("queue")} />}
               {section === "settings" && <SettingsTab role="veto" />}
             </motion.div>
           </AnimatePresence>
@@ -461,7 +463,7 @@ function QueueView({
                               title={d.name}
                               className="h-9 w-9 rounded-lg bg-brand-soft flex items-center justify-center hover:bg-brand-accent/20 transition-colors"
                             >
-                              <Eye className="h-4 w-4 text-brand-accent" />
+                              <NotebookText className="h-4 w-4 text-brand-accent" />
                             </button>
                           ))}
                         </div>
@@ -537,7 +539,7 @@ function QueueView({
                           onClick={() => onOpenDoc(d)}
                           className="text-xs flex items-center gap-1 rounded-lg bg-brand-soft px-2 py-1 text-brand-accent"
                         >
-                          <Eye className="h-3 w-3" /> {d.name}
+                          <NotebookText className="h-3 w-3" /> {d.name}
                         </button>
                       ))}
                     </div>
@@ -877,10 +879,23 @@ const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 
 type DaySchedule = { open: boolean; from: string; to: string };
 
-function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashboard }: { initialClinic: string; initialEmail: string; initialPhone: string; onBackToDashboard?: () => void }) {
+function consultationsToEvents(consultations: Consultation[]): CalendarEvent[] {
+  const today = new Date().toISOString().slice(0, 10);
+  return consultations.map((c) => ({
+    id: c.id,
+    date: today,
+    time: c.time,
+    title: `${c.animal.name} · ${c.ownerName}`,
+    subtitle: c.reason,
+    tone: c.status === "done" ? "done" : isPriority(c.reason) ? "urgent" : "default",
+  }));
+}
+
+function ProfileForm({ initialClinic, initialEmail, initialPhone, profileId, onBackToDashboard }: { initialClinic: string; initialEmail: string; initialPhone: string; profileId: string | null; onBackToDashboard?: () => void }) {
   const [clinic, setClinic] = useState(initialClinic);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
+  const [saving, setSaving] = useState(false);
   const [hours, setHours] = useState<Record<string, DaySchedule>>(() =>
     DAYS.reduce((acc, d) => {
       acc[d] = { open: d !== "Dimanche", from: d === "Samedi" ? "09:00" : "08:30", to: d === "Samedi" ? "13:00" : "19:00" };
@@ -888,11 +903,22 @@ function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashbo
     }, {} as Record<string, DaySchedule>)
   );
 
+  useEffect(() => { setClinic(initialClinic); }, [initialClinic]);
+  useEffect(() => { setEmail(initialEmail); }, [initialEmail]);
+  useEffect(() => { setPhone(initialPhone); }, [initialPhone]);
+
   const updateDay = (day: string, patch: Partial<DaySchedule>) =>
     setHours((h) => ({ ...h, [day]: { ...h[day], ...patch } }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profileId) { toast.error("Session introuvable"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({
+      clinic_name: clinic, email, phone,
+    }).eq("id", profileId);
+    setSaving(false);
+    if (error) { toast.error("Erreur", { description: error.message }); return; }
     toast.success("Profil mis à jour", { description: "Vos modifications ont été enregistrées." });
   };
 
@@ -964,8 +990,8 @@ function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashbo
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
-          <Save className="h-4 w-4 mr-2" /> Enregistrer les modifications
+        <Button type="submit" size="lg" disabled={saving} className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
+          <Save className="h-4 w-4 mr-2" /> {saving ? "Enregistrement…" : "Enregistrer les modifications"}
         </Button>
       </form>
     </div>
