@@ -990,8 +990,8 @@ function ProfileForm({ initialClinic, initialEmail, initialPhone, profileId, onB
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
-          <Save className="h-4 w-4 mr-2" /> Enregistrer les modifications
+        <Button type="submit" size="lg" disabled={saving} className="w-full bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 rounded-xl h-12">
+          <Save className="h-4 w-4 mr-2" /> {saving ? "Enregistrement…" : "Enregistrer les modifications"}
         </Button>
       </form>
     </div>
