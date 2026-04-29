@@ -260,3 +260,19 @@ function RadioRow({
     </div>
   );
 }
+
+function FileSlot({ label, icon: Icon, multiple, onPick }: { label: string; icon: React.ComponentType<{ className?: string }>; multiple?: boolean; onPick: (files: FileList | null) => void }) {
+  return (
+    <label className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-border bg-background hover:border-brand-accent/60 hover:bg-brand-soft/40 cursor-pointer h-20 px-3 text-sm text-brand-title transition-colors">
+      <Icon className="h-4 w-4 text-brand-accent" />
+      <span className="font-medium">{label}</span>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => { onPick(e.target.files); e.target.value = ""; }}
+      />
+    </label>
+  );
+}
