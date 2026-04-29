@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, PawPrint } from "lucide-react";
+import { X, PawPrint, NotebookText, Upload, FileText, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Animal } from "./data";
 
+export type PendingDoc = { file: File; category: "health_book" | "other" };
 
 export function AnimalModal({
   open,
@@ -13,7 +14,7 @@ export function AnimalModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (animal: Animal) => void;
+  onSave: (animal: Animal, docs: PendingDoc[]) => void;
 }) {
   const [sex, setSex] = useState<"M" | "F" | "">("");
   const [name, setName] = useState("");
@@ -22,11 +23,12 @@ export function AnimalModal({
   const [breed, setBreed] = useState("");
   const [insured, setInsured] = useState<boolean | null>(null);
   const [sterilized, setSterilized] = useState<boolean | null>(null);
+  const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
 
   useEffect(() => {
     if (!open) {
       setSex(""); setName(""); setBirthDate(""); setSpecies("");
-      setBreed(""); setInsured(null); setSterilized(null);
+      setBreed(""); setInsured(null); setSterilized(null); setPendingDocs([]);
     }
   }, [open]);
 
@@ -45,9 +47,16 @@ export function AnimalModal({
       birthDate,
       insured: !!insured,
       sterilized: !!sterilized,
-    });
+    }, pendingDocs);
     onClose();
   };
+
+  const addFiles = (files: FileList | null, category: "health_book" | "other") => {
+    if (!files) return;
+    const next: PendingDoc[] = Array.from(files).map((file) => ({ file, category }));
+    setPendingDocs((p) => [...p, ...next]);
+  };
+  const removeDoc = (idx: number) => setPendingDocs((p) => p.filter((_, i) => i !== idx));
 
   return (
     <AnimatePresence>
