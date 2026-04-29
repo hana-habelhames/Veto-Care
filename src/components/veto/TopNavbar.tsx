@@ -10,7 +10,7 @@ import { NotificationsBell } from "./NotificationsBell";
 
 export type NavRole = "guest" | "client" | "veto";
 
-export type GuestNavKey = "home" | "how" | "services" | "partner";
+export type GuestNavKey = "home" | "services" | "emergency";
 export type ClientNavKey = "dashboard" | "animals" | "booking" | "sos" | "adopt";
 export type VetoNavKey = "calendar" | "patients" | "requests" | "emergency";
 export type AnyNavKey = GuestNavKey | ClientNavKey | VetoNavKey;
@@ -29,9 +29,8 @@ type Item<K extends string> = { key: K; label: string; icon?: React.ComponentTyp
 
 const GUEST_ITEMS: Item<GuestNavKey>[] = [
   { key: "home", label: "Accueil" },
-  { key: "how", label: "Comment ça marche" },
   { key: "services", label: "Nos Services" },
-  { key: "partner", label: "Devenir Partenaire" },
+  { key: "emergency", label: "Urgences", icon: AlertTriangle, tone: "danger" },
 ];
 
 const CLIENT_ITEMS: Item<ClientNavKey>[] = [
