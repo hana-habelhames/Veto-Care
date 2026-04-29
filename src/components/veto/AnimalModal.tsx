@@ -151,6 +151,42 @@ export function AnimalModal({
                   onChange={(v) => setSterilized(v === "yes")}
                 />
               </Section>
+
+              {/* Documents */}
+              <Section title="Mes documents associés">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <FileSlot
+                    label="Carnet de santé"
+                    icon={NotebookText}
+                    onPick={(files) => addFiles(files, "health_book")}
+                  />
+                  <FileSlot
+                    label="Autres documents"
+                    icon={Upload}
+                    multiple
+                    onPick={(files) => addFiles(files, "other")}
+                  />
+                </div>
+                {pendingDocs.length > 0 && (
+                  <ul className="space-y-1.5 pt-1">
+                    {pendingDocs.map((d, i) => (
+                      <li key={i} className="flex items-center gap-2 rounded-lg border border-brand-border bg-background px-3 py-2 text-xs">
+                        {d.category === "health_book" ? (
+                          <NotebookText className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-brand-accent shrink-0" />
+                        )}
+                        <span className="flex-1 truncate text-brand-title">{d.file.name}</span>
+                        <span className="text-muted-foreground">{Math.round(d.file.size / 1024)} Ko</span>
+                        <button type="button" onClick={() => removeDoc(i)} className="text-rose-600 hover:bg-rose-50 rounded p-1">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[11px] text-muted-foreground">Les documents seront automatiquement associés à cet animal et accessibles depuis « Mes documents associés ».</p>
+              </Section>
             </div>
 
             {/* Footer */}
