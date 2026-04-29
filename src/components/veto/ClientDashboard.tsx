@@ -86,7 +86,7 @@ export function ClientDashboard({
     if (sectionTrigger && sectionTrigger.n > 0) {
       const k = sectionTrigger.key as Section;
       // valid sections allowed via header nav
-      if (["rdv", "booking", "animals", "adopt", "clinics", "conseils"].includes(k)) {
+      if (["rdv", "booking", "animals", "adopt", "clinics", "conseils", "documents"].includes(k)) {
         setSection(k);
       }
     }
