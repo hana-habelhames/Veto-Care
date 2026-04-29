@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarPlus, Lightbulb, CheckCircle2,
   PawPrint, Stethoscope, Calendar as CalendarIcon,
-  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone, Heart, ArrowLeft,
+  Building2, User, Settings, LogOut, Plus, MapPin, Menu, X, Clock, Phone, Heart, ArrowLeft, NotebookText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,11 @@ import { AnimalModal } from "./AnimalModal";
 import { ArticleModal } from "./ArticleModal";
 import { AdoptionGallery } from "./AdoptionGallery";
 import { SettingsTab } from "./SettingsTab";
+import { AnimalDocumentsPage } from "./AnimalDocumentsPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-type Section = "rdv" | "clinics" | "animals" | "profile" | "settings" | "booking" | "conseils" | "adopt";
+type Section = "rdv" | "clinics" | "animals" | "profile" | "settings" | "booking" | "conseils" | "adopt" | "documents";
 
 type Appointment = {
   id: string;
@@ -53,6 +54,7 @@ const NAV: { key: Section; label: string; icon: React.ComponentType<{ className?
   { key: "animals", label: "Mes animaux", icon: PawPrint },
   { key: "adopt", label: "Adopter un compagnon", icon: Heart },
   { key: "conseils", label: "Conseils", icon: Lightbulb },
+  { key: "documents", label: "Mes documents associés", icon: NotebookText },
   { key: "profile", label: "Mon profil", icon: User },
   { key: "settings", label: "Paramètres & sécurité", icon: Settings },
 ];
@@ -143,6 +145,7 @@ export function ClientDashboard({
               {section === "animals" && <AnimalsTab animals={animals} onChange={refresh} />}
               {section === "adopt" && <AdoptionGallery />}
               {section === "conseils" && <ConseilsTab />}
+              {section === "documents" && <AnimalDocumentsPage />}
               {section === "profile" && <ProfileTab onBackToDashboard={() => setSection("rdv")} />}
               {section === "settings" && <SettingsTab role="client" />}
             </motion.div>
