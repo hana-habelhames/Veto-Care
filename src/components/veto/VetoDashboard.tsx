@@ -879,10 +879,23 @@ const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 
 type DaySchedule = { open: boolean; from: string; to: string };
 
-function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashboard }: { initialClinic: string; initialEmail: string; initialPhone: string; onBackToDashboard?: () => void }) {
+function consultationsToEvents(consultations: Consultation[]): CalendarEvent[] {
+  const today = new Date().toISOString().slice(0, 10);
+  return consultations.map((c) => ({
+    id: c.id,
+    date: today,
+    time: c.time,
+    title: `${c.animal.name} · ${c.ownerName}`,
+    subtitle: c.reason,
+    tone: c.status === "done" ? "done" : isPriority(c.reason) ? "urgent" : "default",
+  }));
+}
+
+function ProfileForm({ initialClinic, initialEmail, initialPhone, profileId, onBackToDashboard }: { initialClinic: string; initialEmail: string; initialPhone: string; profileId: string | null; onBackToDashboard?: () => void }) {
   const [clinic, setClinic] = useState(initialClinic);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
+  const [saving, setSaving] = useState(false);
   const [hours, setHours] = useState<Record<string, DaySchedule>>(() =>
     DAYS.reduce((acc, d) => {
       acc[d] = { open: d !== "Dimanche", from: d === "Samedi" ? "09:00" : "08:30", to: d === "Samedi" ? "13:00" : "19:00" };
@@ -890,11 +903,22 @@ function ProfileForm({ initialClinic, initialEmail, initialPhone, onBackToDashbo
     }, {} as Record<string, DaySchedule>)
   );
 
+  useEffect(() => { setClinic(initialClinic); }, [initialClinic]);
+  useEffect(() => { setEmail(initialEmail); }, [initialEmail]);
+  useEffect(() => { setPhone(initialPhone); }, [initialPhone]);
+
   const updateDay = (day: string, patch: Partial<DaySchedule>) =>
     setHours((h) => ({ ...h, [day]: { ...h[day], ...patch } }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profileId) { toast.error("Session introuvable"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({
+      clinic_name: clinic, email, phone,
+    }).eq("id", profileId);
+    setSaving(false);
+    if (error) { toast.error("Erreur", { description: error.message }); return; }
     toast.success("Profil mis à jour", { description: "Vos modifications ont été enregistrées." });
   };
 
