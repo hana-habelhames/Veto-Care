@@ -475,9 +475,9 @@ function AnimalsTab({ animals, onChange }: { animals: DbAnimal[]; onChange: () =
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const handleSave = async (a: Animal) => {
+  const handleSave = async (a: Animal, docs: { file: File; category: "health_book" | "other" }[]) => {
     if (!profile) return;
-    const { error } = await supabase.from("animals").insert({
+    const { data: inserted, error } = await supabase.from("animals").insert({
       owner_id: profile.id,
       name: a.name,
       species: a.species,
@@ -486,9 +486,35 @@ function AnimalsTab({ animals, onChange }: { animals: DbAnimal[]; onChange: () =
       birth_date: a.birthDate || null,
       insured: a.insured,
       sterilized: a.sterilized,
-    });
-    if (error) { toast.error("Erreur", { description: error.message }); return; }
+    }).select("id").single();
+    if (error || !inserted) { toast.error("Erreur", { description: error?.message }); return; }
     toast.success("Animal ajouté", { description: a.name });
+
+    // Upload pending documents (best-effort)
+    if (docs.length > 0) {
+      let uploaded = 0;
+      for (const d of docs) {
+        try {
+          const ext = d.file.name.split(".").pop() || "bin";
+          const path = `${profile.id}/${inserted.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("animal-documents").upload(path, d.file);
+          if (upErr) throw upErr;
+          const { data: pub } = supabase.storage.from("animal-documents").getPublicUrl(path);
+          await supabase.from("animal_documents").insert({
+            animal_id: inserted.id,
+            owner_id: profile.id,
+            category: d.category,
+            file_name: d.file.name,
+            storage_path: path,
+            public_url: pub.publicUrl,
+            mime_type: d.file.type,
+            size_bytes: d.file.size,
+          });
+          uploaded++;
+        } catch { /* ignore individual failures */ }
+      }
+      if (uploaded > 0) toast.success(`${uploaded} document(s) associé(s)`);
+    }
     onChange();
   };
 
