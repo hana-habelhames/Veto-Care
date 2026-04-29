@@ -46,6 +46,14 @@ function Index() {
   const [settingsTrigger, setSettingsTrigger] = useState(0);
   const [sectionTrigger, setSectionTrigger] = useState<{ key: string; n: number }>({ key: "", n: 0 });
 
+  // After logout (user becomes null), force-redirect to the public landing.
+  useEffect(() => {
+    if (!loading && !user) {
+      setHistory(["landing"]);
+      setSosOpen(false);
+    }
+  }, [user, loading]);
+
   const navigate = (next: View) =>
     setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));
   const goBack = () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
