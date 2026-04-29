@@ -4,7 +4,7 @@ import {
   ListChecks, UserCog, PawPrint, Mail, Phone, FileImage, Eye, X,
   Clock, PlayCircle, CheckCircle2, Stethoscope, Building2, Save, Calendar,
   LayoutDashboard, Users, Settings, LogOut, Menu, ArrowRight, ArrowLeft,
-  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart,
+  Pencil, FileText, Send, AlertTriangle, Cat, Dog, Rabbit, Bird, Check, Heart, NotebookText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { VetoAdoptions } from "./VetoAdoptions";
 import { SettingsTab } from "./SettingsTab";
+import { VetoCalendar, type CalendarEvent } from "./VetoCalendar";
+import { supabase } from "@/integrations/supabase/client";
 
 type Status = "waiting" | "in_progress" | "done";
 
@@ -232,8 +234,8 @@ export function VetoDashboard({
               )}
               {section === "patients" && <PatientsView consultations={consultations} onSelect={setSelected} />}
               {section === "adoptions" && <VetoAdoptions />}
-              {section === "calendar" && <Placeholder title="Calendrier" icon={Calendar} text="Bientôt : visualisez vos rendez-vous semaine et mois." />}
-              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} onBackToDashboard={() => setSection("queue")} />}
+              {section === "calendar" && <VetoCalendar events={consultationsToEvents(consultations)} />}
+              {section === "profile" && <ProfileForm initialClinic={profile?.clinic_name ?? "Clinique du Parc"} initialEmail={profile?.email ?? ""} initialPhone={profile?.phone ?? ""} profileId={profile?.id ?? null} onBackToDashboard={() => setSection("queue")} />}
               {section === "settings" && <SettingsTab role="veto" />}
             </motion.div>
           </AnimatePresence>
@@ -461,7 +463,7 @@ function QueueView({
                               title={d.name}
                               className="h-9 w-9 rounded-lg bg-brand-soft flex items-center justify-center hover:bg-brand-accent/20 transition-colors"
                             >
-                              <Eye className="h-4 w-4 text-brand-accent" />
+                              <NotebookText className="h-4 w-4 text-brand-accent" />
                             </button>
                           ))}
                         </div>
@@ -537,7 +539,7 @@ function QueueView({
                           onClick={() => onOpenDoc(d)}
                           className="text-xs flex items-center gap-1 rounded-lg bg-brand-soft px-2 py-1 text-brand-accent"
                         >
-                          <Eye className="h-3 w-3" /> {d.name}
+                          <NotebookText className="h-3 w-3" /> {d.name}
                         </button>
                       ))}
                     </div>
