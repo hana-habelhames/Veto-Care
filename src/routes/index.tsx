@@ -114,15 +114,17 @@ function Index() {
     }
   };
 
-  const handleGuestNav = (k: "home" | "how" | "services" | "partner") => {
+  const handleGuestNav = (k: "home" | "services" | "emergency") => {
     if (k === "home") {
       goLanding();
       window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
       return;
     }
-    if (k === "how") scrollToSection("how-it-works");
-    else if (k === "services") scrollToSection("services");
-    else if (k === "partner") scrollToSection("partner");
+    if (k === "services") scrollToSection("services");
+    else if (k === "emergency") {
+      toast.error(PROTECTED_MESSAGE);
+      navigate("auth");
+    }
   };
 
   const handleClientNav = (k: "dashboard" | "animals" | "booking" | "sos" | "adopt") => {
