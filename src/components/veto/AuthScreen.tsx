@@ -72,16 +72,35 @@ export function AuthScreen({ onBack, onSuccess }: { onBack: () => void; onSucces
     }
   };
 
+  // const handleGoogle = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const result = await lovable.auth.signInWithOAuth("google", {
+  //       redirect_uri: window.location.origin,
+  //     });
+  //     if (result.error) throw result.error;
+  //     if (result.redirected) return;
+  //     toast.success("Connecté avec Google !");
+  //     onSuccess();
+  //   } catch (err) {
+  //     const msg = err instanceof Error ? err.message : "Erreur Google";
+  //     toast.error("Erreur Google", { description: msg });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin, // Redirige vers http://localhost:5173 après la connexion
+        },
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      toast.success("Connecté avec Google !");
-      onSuccess();
+
+      if (error) throw error;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur Google";
       toast.error("Erreur Google", { description: msg });
