@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import type { Animal, ClientProfile } from "./data";
 import { AnimalModal } from "./AnimalModal";
+import { supabase } from "@/integrations/supabase/client";
 
 export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDone: (profile: ClientProfile) => void }) {
   const [fullName, setFullName] = useState("");
@@ -15,6 +16,7 @@ export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDon
   const [address, setAddress] = useState("");
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+ 
 
   const removeAnimal = (id: string) => setAnimals((a) => a.filter((x) => x.id !== id));
 
@@ -23,6 +25,21 @@ export function ClientOnboarding({ onBack, onDone }: { onBack: () => void; onDon
     toast.success("Profil créé !", { description: `${animals.length} animal(aux) enregistré(s).` });
     onDone({ fullName, email, phone, city: address, address, animals });
   };
+
+   useEffect(() => {
+    const syncRole = async () => {
+      const savedRole = localStorage.getItem("userRole");
+      if (savedRole) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("profiles").update({ role: savedRole as "client" | "veto" }).eq("id", user.id);
+          localStorage.removeItem("userRole");
+          console.log("Rôle synchronisé !");
+        }
+      }
+    };
+    syncRole();
+  }, []);
 
   return (
     <div className="min-h-screen px-4 sm:px-6 py-12">

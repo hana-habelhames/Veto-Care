@@ -72,42 +72,31 @@ export function AuthScreen({ onBack, onSuccess }: { onBack: () => void; onSucces
     }
   };
 
-  // const handleGoogle = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const result = await lovable.auth.signInWithOAuth("google", {
-  //       redirect_uri: window.location.origin,
-  //     });
-  //     if (result.error) throw result.error;
-  //     if (result.redirected) return;
-  //     toast.success("Connecté avec Google !");
-  //     onSuccess();
-  //   } catch (err) {
-  //     const msg = err instanceof Error ? err.message : "Erreur Google";
-  //     toast.error("Erreur Google", { description: msg });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  // Dans AuthScreen.tsx
+const handleGoogle = async () => {
+  setLoading(true);
+  try {
+    // 1. On garde le rôle en mémoire pour la première connexion
+    localStorage.setItem("userRole", role);
 
-  const handleGoogle = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin, // Redirige vers http://localhost:5173 après la connexion
-        },
-      });
+    // 2. On définit l'adresse de destination
+    const destination = role === "veto" ? "/veto" : "/client";
 
-      if (error) throw error;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur Google";
-      toast.error("Erreur Google", { description: msg });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // 3. Google redirigera DIRECTEMENT sur la bonne URL
+        redirectTo: `${window.location.origin}${destination}`,
+      },
+    });
+
+    if (error) throw error;
+  } catch (err) {
+    toast.error("Erreur Google");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen px-4 py-12 flex items-start justify-center">

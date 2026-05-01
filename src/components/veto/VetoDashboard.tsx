@@ -167,6 +167,21 @@ export function VetoDashboard({
     }
   }, [sectionTrigger]);
 
+  useEffect(() => {
+  const syncRole = async () => {
+    const savedRole = localStorage.getItem("userRole");
+    if (savedRole) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("profiles").update({ role: savedRole as "client" | "veto" }).eq("id", user.id);
+        localStorage.removeItem("userRole");
+        console.log("Rôle synchronisé !");
+      }
+    }
+  };
+  syncRole();
+}, []);
+
   const cycleStatus = (id: string) =>
     setConsultations((list) =>
       list.map((c) => {
