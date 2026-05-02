@@ -31,5 +31,5 @@ export const Route = createFileRoute('/client')({
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw redirect({ to: '/' })
   },
-  component: ClientPageWrapper, // 👈 C'est ici que la magie opère
+  component: ClientPageWrapper, 
 })

@@ -15,6 +15,7 @@ import { SosModal } from "@/components/veto/SosModal";
 import { NotificationsPage } from "@/components/veto/NotificationsPage";
 import { Phone } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
@@ -26,11 +27,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Suivi santé, rendez-vous et téléconsultation pour vos animaux." },
     ],
   }),
-  component: () => (
-    <AuthProvider>
-      <Index />
-    </AuthProvider>
-  ),
+    component: Index,
 });
 
 type View = "landing" | "auth" | "dashboard" | "search" | "news" | "notifications";
@@ -45,14 +42,38 @@ function Index() {
   const [profileTrigger, setProfileTrigger] = useState(0);
   const [settingsTrigger, setSettingsTrigger] = useState(0);
   const [sectionTrigger, setSectionTrigger] = useState<{ key: string; n: number }>({ key: "", n: 0 });
+  const routerNavigate = useNavigate();
 
-  // After logout (user becomes null), force-redirect to the public landing.
+// Nouvelle version : Gère la déconnexion ET la connexion correctement
   useEffect(() => {
-    if (!loading && !user) {
-      setHistory(["landing"]);
+    if (loading) return; // On attend que Supabase finisse de charger
+
+    if (!user) {
+      // 1. Cas : Déconnexion ou visiteur anonyme
       setSosOpen(false);
+      setHistory((prev) => {
+        const currentView = prev[prev.length - 1];
+        if (["landing", "auth", "news", "search"].includes(currentView)) {
+          return prev;
+        }
+        return ["landing"];
+      });
+    } else if (user && profile) {
+      // 2. Cas : Utilisateur connecté et profil chargé
+      const currentView = history[history.length - 1];
+
+      // Si la vue actuelle est l'accueil ou la page d'auth, on utilise TanStack Router !
+      if (currentView === "landing" || currentView === "auth") {
+        
+        // 👉 Redirection basée sur le rôle de la base de données
+        if (profile.role === "veto") {
+          routerNavigate({ to: "/veto" });
+        } else {
+          routerNavigate({ to: "/client" });
+        }
+      }
     }
-  }, [user, loading]);
+  }, [user, profile, loading, history, routerNavigate]); 
 
   const navigate = (next: View) =>
     setHistory((h) => (h[h.length - 1] === next ? h : [...h, next]));

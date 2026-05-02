@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
 import { lovable } from "@/integrations/lovable";
 
 type Mode = "login" | "signup";
 type Role = "client" | "veto";
 
 export function AuthScreen({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+ const navigate = useNavigate();
+ 
   const [mode, setMode] = useState<Mode>("signup");
   const [role, setRole] = useState<Role>("client");
   const [loading, setLoading] = useState(false);
@@ -31,38 +34,73 @@ export function AuthScreen({ onBack, onSuccess }: { onBack: () => void; onSucces
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    try {
+try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
         toast.success("Connecté !");
-        onSuccess();
+        
+        if (profile?.role === "veto") {
+          navigate({ to: "/veto" });
+        } else {
+          navigate({ to: "/client" });
+        }
+
       } else {
+        // MODE INSCRIPTION
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
             data: { full_name: fullName, role },
           },
         });
         if (error) throw error;
 
-        // Update profile with extra fields
         if (data.user) {
+          // 1. Mise à jour du profil de base
           await supabase.from("profiles").update({
             full_name: fullName,
-            phone,
-            city,
-            address,
-            role,
-            ...(role === "veto" && { clinic_name: clinicName, emergency_24_7: emergency, home_visit: homeVisit }),
+            role: role,
           }).eq("id", data.user.id);
-        }
 
+          // 2. Insertion dans les nouvelles tables (Ici, on est bien À L'INTÉRIEUR du if(data.user) )
+          // On ajoute "as any" pour faire disparaître les lignes rouges de TypeScript
+          if (role === "veto") {
+            await supabase.from("veterinaires" as any).insert({
+              id: data.user.id,
+              clinic_name: clinicName,
+              phone: phone,
+              address: address,
+              city: city,
+              emergency_24_7: emergency,
+              home_visit: homeVisit
+            });
+          } else {
+            await supabase.from("clients" as any).insert({
+              id: data.user.id,
+              phone: phone,
+              address: address,
+              city: city
+            });
+          }
+        } 
+
+        // Ces lignes sont maintenant bien placées, elles ne s'exécuteront que pour l'inscription
         toast.success("Inscription réussie !", { description: "Bienvenue sur Veto-Care 🎉" });
-        onSuccess();
+        
+        if (role === "veto") {
+          navigate({ to: "/veto" });
+        } else {
+          navigate({ to: "/client" });
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
@@ -71,32 +109,6 @@ export function AuthScreen({ onBack, onSuccess }: { onBack: () => void; onSucces
       setLoading(false);
     }
   };
-
-  // Dans AuthScreen.tsx
-const handleGoogle = async () => {
-  setLoading(true);
-  try {
-    // 1. On garde le rôle en mémoire pour la première connexion
-    localStorage.setItem("userRole", role);
-
-    // 2. On définit l'adresse de destination
-    const destination = role === "veto" ? "/veto" : "/client";
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // 3. Google redirigera DIRECTEMENT sur la bonne URL
-        redirectTo: `${window.location.origin}${destination}`,
-      },
-    });
-
-    if (error) throw error;
-  } catch (err) {
-    toast.error("Erreur Google");
-  } finally {
-    setLoading(false);
-  }
-};
 
   return (
     <div className="min-h-screen px-4 py-12 flex items-start justify-center">
@@ -126,23 +138,6 @@ const handleGoogle = async () => {
           <p className="text-sm text-muted-foreground mb-6">
             {mode === "login" ? "Connectez-vous à votre espace Veto-Care." : "Rejoignez la plateforme vétérinaire en Algérie."}
           </p>
-
-          {/* Google */}
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={loading}
-            className="w-full mb-5 flex items-center justify-center gap-2.5 rounded-xl border border-brand-border bg-card hover:bg-brand-soft transition-colors py-3 text-sm font-medium text-brand-title"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2c-.4.4 6.6-4.8 6.6-14.8 0-1.3-.1-2.7-.4-3.5z"/></svg>
-            Continuer avec Google
-          </button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-brand-border" />
-            <span className="text-xs text-muted-foreground">ou par email</span>
-            <div className="flex-1 h-px bg-brand-border" />
-          </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
             {mode === "signup" && (

@@ -15,6 +15,8 @@ import { VetoAdoptions } from "./VetoAdoptions";
 import { SettingsTab } from "./SettingsTab";
 import { VetoCalendar, type CalendarEvent } from "./VetoCalendar";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
+
 
 type Status = "waiting" | "in_progress" | "done";
 
@@ -146,6 +148,8 @@ export function VetoDashboard({
   sectionTrigger?: SectionTrigger;
 } = {}) {
   const { signOut, profile } = useAuth();
+
+  const navigate = useNavigate();
   const [section, setSection] = useState<Section>("queue");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [consultations, setConsultations] = useState<Consultation[]>(SEED);
@@ -202,6 +206,7 @@ export function VetoDashboard({
   const handleLogout = async () => {
     await signOut();
     toast.success("Déconnecté");
+    navigate({ to: "/" });
   };
 
   return (

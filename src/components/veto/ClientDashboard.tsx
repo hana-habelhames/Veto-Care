@@ -18,6 +18,7 @@ import { SettingsTab } from "./SettingsTab";
 import { AnimalDocumentsPage } from "./AnimalDocumentsPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
 
 type Section = "rdv" | "clinics" | "animals" | "profile" | "settings" | "booking" | "conseils" | "adopt" | "documents";
 
@@ -70,6 +71,7 @@ export function ClientDashboard({
   sectionTrigger?: SectionTrigger;
 }) {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [section, setSection] = useState<Section>("rdv");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [animals, setAnimals] = useState<DbAnimal[]>([]);
@@ -109,6 +111,7 @@ export function ClientDashboard({
   const handleLogout = async () => {
     await signOut();
     toast.success("Déconnecté");
+    navigate({ to: "/" });
   };
 
   return (
@@ -158,6 +161,15 @@ export function ClientDashboard({
 
 function SidebarContent({ section, onSelect, onLogout }: { section: Section; onSelect: (s: Section) => void; onLogout: () => void }) {
   return (
+    <div className="flex flex-col h-full">
+      {/* 1. L'en-tête avec le logo et le nom */}
+      <div className="flex items-center gap-2 px-3 py-4 mb-2 font-bold text-xl text-brand-title shrink-0">
+        <span className="h-9 w-9 rounded-xl bg-brand-accent flex items-center justify-center shadow-sm">
+          <PawPrint className="h-5 w-5 text-white" />
+        </span>
+        <span>Veto-Care</span>
+      </div>
+
     <nav className="flex flex-col gap-1">
       {NAV.map((item) => {
         const active = section === item.key;
@@ -174,6 +186,7 @@ function SidebarContent({ section, onSelect, onLogout }: { section: Section; onS
         <LogOut className="h-4 w-4" /> Me déconnecter
       </button>
     </nav>
+    </div>
   );
 }
 
@@ -288,6 +301,8 @@ type ConsultType = "" | "home" | "clinic";
 function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () => void }) {
   const { profile } = useAuth();
 
+  const [clinicsDb, setClinicsDb] = useState<any[]>([]);
+
   const [city, setCity] = useState("");
   const [animalText, setAnimalText] = useState(
     animals[0] ? `${animals[0].name} — ${animals[0].species}` : ""
@@ -298,18 +313,39 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    const fetchClinics = async () => {
+      const { data, error } = await supabase
+        .from("veterinaires" as any)
+        .select("*");
+      
+      if (data) {
+        setClinicsDb(data);
+      }
+    };
+    fetchClinics();
+  }, []);
 
-  const cities = Array.from(new Set(CLINICS.map((c) => c.city))).sort();
 
-  const filteredClinics: Vet[] = CLINICS.filter((c) => {
-    if (!city || c.city.toLowerCase() !== city.toLowerCase()) return false;
-    if (consultType === "home" && !c.homeVisit) return false;
-    if (consultType === "clinic" && !c.walkIn) return false;
-    return true;
-  });
+  const cities = Array.from(new Set(clinicsDb.map((c) => c.city).filter(Boolean))).sort();
 
+  const filteredClinics = clinicsDb.filter((c) => {
+  // On sécurise la recherche de la ville (enlève les espaces invisibles)
+  const dbCity = c.city ? String(c.city).trim().toLowerCase() : "";
+  const searchCity = city ? String(city).trim().toLowerCase() : "";
+
+  // 1. Vérification de la ville
+  if (!searchCity || dbCity !== searchCity) return false;
+  
+  // 2. Vérification de la consultation à domicile (attention au nom de la colonne : home_visit)
+  if (consultType === "home" && c.home_visit !== true) return false;
+  
+  return true; 
+});
+  const selectedClinic = clinicsDb.find((c) => c.id === clinicId) || null;
   const clinicReady = !!city && !!consultType;
-  const selectedClinic = CLINICS.find((c) => c.id === clinicId) || null;
+  
 
   // Reset clinic when filters change
   useEffect(() => { setClinicId(""); }, [city, consultType]);
@@ -319,20 +355,21 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
     if (!profile || !selectedClinic) { toast.error("Veuillez choisir une clinique"); return; }
     if (!animalText.trim()) { toast.error("Veuillez renseigner l'animal"); return; }
     setLoading(true);
-    const { data: inserted, error } = await supabase.from("appointments").insert({
+
+    const { data: inserted, error } = await supabase.from("appointments" as any).insert({
       owner_id: profile.id,
       animal_id: null,
       clinic_id: selectedClinic.id,
-      clinic_name: selectedClinic.clinic,
+      clinic_name: selectedClinic.clinic_name,
       clinic_city: selectedClinic.city,
       clinic_address: selectedClinic.address,
       clinic_phone: selectedClinic.phone,
-      vet_name: selectedClinic.name,
+     vet_name: selectedClinic.clinic_name,
       appointment_date: date,
       appointment_time: time,
       reason: `[${consultType === "home" ? "À domicile" : "En clinique"}] ${animalText} — ${reason}`,
       status: "confirmed",
-    }).select("id").single();
+    }).select("id").single() as any;
     setLoading(false);
     if (error) { toast.error("Erreur", { description: error.message }); return; }
 
@@ -346,7 +383,7 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
           vetUserId: null,
           appointmentId: inserted.id,
           animalLabel: animalText,
-          clinicName: selectedClinic.clinic,
+          clinicName: selectedClinic.clinic_name,
           date,
           time,
         });
@@ -439,7 +476,7 @@ function BookingForm({ animals, onBooked }: { animals: DbAnimal[]; onBooked: () 
               <option value="">Sélectionnez une clinique...</option>
               {filteredClinics.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.clinic} — {c.name}{c.emergency24 ? " · Urgences 24/7" : ""}
+                 {c.clinic_name} {c.emergency_24_7 ? " · Urgences 24/7" : ""}
                 </option>
               ))}
             </select>
@@ -497,10 +534,12 @@ function AnimalsTab({ animals, onChange }: { animals: DbAnimal[]; onChange: () =
         try {
           const ext = d.file.name.split(".").pop() || "bin";
           const path = `${profile.id}/${inserted.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-          const { error: upErr } = await supabase.storage.from("animal-documents").upload(path, d.file);
+          
+          const { error: upErr } = await supabase.storage.from("animal_documents").upload(path, d.file);
           if (upErr) throw upErr;
-          const { data: pub } = supabase.storage.from("animal-documents").getPublicUrl(path);
-          await supabase.from("animal_documents").insert({
+          
+          const { data: pub } = supabase.storage.from("animal_documents").getPublicUrl(path);
+          const { error: dbErr } = await supabase.from("animal_documents").insert({
             animal_id: inserted.id,
             owner_id: profile.id,
             category: d.category,
@@ -510,12 +549,18 @@ function AnimalsTab({ animals, onChange }: { animals: DbAnimal[]; onChange: () =
             mime_type: d.file.type,
             size_bytes: d.file.size,
           });
+          if (dbErr) throw new Error(`Insertion DB : ${dbErr.message}`);
           uploaded++;
-        } catch { /* ignore individual failures */ }
+        } catch (err: any) {
+          console.error("Erreur lors de l'upload du document :", err);
+          toast.error("Erreur document", { description: err.message });
+        }
       }
       if (uploaded > 0) toast.success(`${uploaded} document(s) associé(s)`);
     }
     onChange();
+    setOpen(false);
+
   };
 
   return (
@@ -655,4 +700,5 @@ function ProfileTab({ onBackToDashboard }: { onBackToDashboard: () => void }) {
     </div>
   );
 }
+
 
