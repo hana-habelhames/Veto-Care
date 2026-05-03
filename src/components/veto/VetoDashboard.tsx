@@ -21,14 +21,32 @@ import { useNavigate } from "@tanstack/react-router";
 type Status = "waiting" | "in_progress" | "done";
 
 type Consultation = {
-  id: string;
+  // Clés primaires / étrangères
+  id: string; 
+  owner_id: string;
+  animal_id: string;
+  clinic_id: string;
+
+  // Infos Propriétaire & Animal (pour l'affichage)
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;
   animal: { name: string; species: string; age: string };
+
+  // Infos Clinique (Directement issues de la table)
+  clinic_name: string;
+  clinic_city: string;
+  clinic_address: string;
+  clinic_phone: string;
+  vet_name: string;
+
+  // Rendez-vous (Noms exacts de ta table)
   reason: string;
-  time: string;
-  status: Status;
+  appoitment_date: string; // Gardé avec la typo "oit" si c'est ainsi en DB
+  appointment_time: string;
+  statue: Status; // "statue" comme dans ta description de table
+
+  // Extension pour la gestion médicale (Front-end)
   startedAt?: number;
   endedAt?: number;
   history: { date: string; note: string }[];
@@ -37,69 +55,52 @@ type Consultation = {
 
 const SEED: Consultation[] = [
   {
-    id: "c1",
+    id: "app_001",
+    owner_id: "user_amine_01",
+    animal_id: "pet_pixel_01",
+    clinic_id: "clin_alger_01",
     ownerName: "Amine Benali",
     ownerEmail: "amine.benali@email.dz",
     ownerPhone: "+213 555 12 34 56",
     animal: { name: "Pixel", species: "Chat européen", age: "4 ans" },
-    reason: "Vomissements répétés depuis 2 jours, perte d'appétit.",
-    time: "09:00",
-    status: "waiting",
-    history: [
-      { date: "12/03/2024", note: "Vaccin annuel — RAS" },
-      { date: "08/11/2023", note: "Stérilisation — récupération normale" },
-    ],
+    // Structure plate ici :
+    clinic_name: "Clinique Veterinaire El Biar",
+    clinic_city: "Alger",
+    clinic_address: "12 Rue des Pins",
+    clinic_phone: "+213 21 00 00 01",
+    vet_name: "Dr. Mansouri",
+    reason: "Vomissements répétés depuis 2 jours.",
+    appoitment_date: "2024-05-20", 
+    appointment_time: "09:00",
+    statue: "waiting",
+    history: [{ date: "12/03/2024", note: "Vaccin annuel — RAS" }],
     documents: [
       { name: "carnet-sante.jpg", url: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800" },
     ],
   },
   {
-    id: "c2",
+    id: "app_002",
+    owner_id: "user_meriem_02",
+    animal_id: "pet_rocky_02",
+    clinic_id: "clin_alger_01",
     ownerName: "Meriem Mansouri",
     ownerEmail: "meriem.mansouri@email.dz",
     ownerPhone: "+213 661 98 76 54",
     animal: { name: "Rocky", species: "Berger australien", age: "2 ans" },
-    reason: "Boiterie patte avant droite après une promenade.",
-    time: "09:30",
-    status: "in_progress",
+    // On répète les infos de la clinique (car c'est une table de RDV)
+    clinic_name: "Clinique Veterinaire El Biar",
+    clinic_city: "Alger",
+    clinic_address: "12 Rue des Pins",
+    clinic_phone: "+213 21 00 00 01",
+    vet_name: "Dr. Mansouri",
+    reason: "Boiterie patte avant droite.",
+    appoitment_date: "2024-05-20",
+    appointment_time: "09:30",
+    statue: "in_progress",
     startedAt: Date.now() - 15 * 60 * 1000,
-    history: [
-      { date: "05/01/2024", note: "Rappel vaccin Lyme" },
-      { date: "20/06/2023", note: "Consultation comportement" },
-    ],
-    documents: [
-      { name: "photo-patte.jpg", url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800" },
-      { name: "ordonnance.pdf", url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800" },
-    ],
-  },
-  {
-    id: "c3",
-    ownerName: "Yacine Brahimi",
-    ownerEmail: "yacine.brahimi@email.dz",
-    ownerPhone: "+213 770 55 44 33",
-    animal: { name: "Mochi", species: "Lapin nain", age: "1 an" },
-    reason: "Contrôle dentaire de routine.",
-    time: "10:15",
-    status: "waiting",
-    history: [{ date: "10/02/2024", note: "Première consultation — RAS" }],
+    history: [{ date: "05/01/2024", note: "Rappel vaccin Lyme" }],
     documents: [],
-  },
-  {
-    id: "c4",
-    ownerName: "Sofiane Haddad",
-    ownerEmail: "sofiane.haddad@email.dz",
-    ownerPhone: "+213 540 11 22 33",
-    animal: { name: "Luna", species: "Labrador", age: "7 ans" },
-    reason: "Suivi traitement arthrose senior.",
-    time: "11:00",
-    status: "waiting",
-    history: [
-      { date: "15/02/2024", note: "Bilan sénior — début traitement anti-inflammatoire" },
-    ],
-    documents: [
-      { name: "radio-hanche.jpg", url: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800" },
-    ],
-  },
+  }
 ];
 
 const STATUS_CYCLE: Record<Status, Status> = {
@@ -152,7 +153,8 @@ export function VetoDashboard({
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>("queue");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [consultations, setConsultations] = useState<Consultation[]>(SEED);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<Consultation | null>(null);
   const [viewerDoc, setViewerDoc] = useState<{ name: string; url: string } | null>(null);
 
@@ -186,22 +188,131 @@ export function VetoDashboard({
   syncRole();
 }, []);
 
-  const cycleStatus = (id: string) =>
+useEffect(() => {
+  async function fetchVetAppointments() {
+    // Si le vétérinaire n'est pas encore chargé, on ne fait rien
+    if (!profile?.id) {
+      console.log("❌ Pas de profile.id trouvé. Arrêt de la fonction.");
+      return;
+    }
+    console.log("✅ ID du profil utilisé pour la recherche :", profile.id);
+
+    try {
+      setIsLoading(true);
+      
+      // On requête la table "appointments"
+      // On utilise les jointures Supabase pour récupérer les infos liées (animal et propriétaire)
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(`
+          id,
+          reason,
+          appointment_date,
+          appointment_time,
+          status,
+          clinic_id,
+          animal_id,
+          owner_id,
+          animal:animals!animal_id ( name, species, birth_date ),
+          owner:profiles!appointments_owner_id_fkey ( full_name )
+        `)
+        // ICI : Le filtre strict pour ne prendre que les RDV de CE vétérinaire
+        // (Assure-toi que ta colonne s'appelle bien 'vet_id' ou remplace par 'clinic_id' selon ta structure)
+        .eq("clinic_id", profile.id); 
+        console.log("Résultat brut Supabase (data) :", data);
+
+      if (error) {
+        console.error("❌ Erreur retournée par Supabase :", error);
+        throw error;
+      }
+
+      // On formate les données de la base pour qu'elles correspondent à ton type "Consultation"
+      const formattedConsultations: Consultation[] = data.map((app: any) => ({
+        id: app.id,
+        owner_id: app.owner_id,
+        animal_id: app.animal_id,
+        clinic_id: app.clinic_id,
+        
+        // Mappage des infos du propriétaire
+        ownerName: app.owner?.full_name || "Client inconnu",
+        ownerEmail: app.owner?.email || "",
+        ownerPhone: app.owner?.phone || "Non renseigné",
+        
+        // Mappage des infos de l'animal
+        animal: {
+          name: app.animal?.name || "Inconnu",
+          species: app.animal?.species || "Inconnue",
+          age: app.animal?.birth_date || "",
+        },
+
+        // Infos du vétérinaire (récupérées depuis le profil connecté)
+        clinic_name: profile?.clinic_name || "Ma Clinique",
+        clinic_city: profile?.city || "", // Si tu as ce champ dans profiles
+        clinic_address: profile?.address || "", 
+        clinic_phone: profile?.phone || "",
+        vet_name: profile?.full_name || "Dr.",
+
+        // Infos du RDV
+        reason: app.reason,
+        appoitment_date: app.appointment_date, // Fais attention à la typo 'appoitment'
+        appointment_time: app.appointment_time,
+        statue: app.status as Status, // Map ton champ 'status' en DB avec ton type 'statue'
+
+        // Valeurs par défaut pour les champs non stockés directement dans 'appointments'
+        history: [], 
+        documents: [],
+      }));
+
+      setConsultations(formattedConsultations);
+    } catch (err: any) {
+      console.error("Erreur lors de la récupération des RDV:", err);
+      toast.error("Impossible de charger vos rendez-vous", { description: err.message });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  fetchVetAppointments();
+}, [profile?.id]); // Relance la requête si l'ID du profil change
+
+  const cycleStatus = async (id: string) => {
+  // 1. On retrouve la consultation pour calculer le prochain statut
+  const consultation = consultations.find((c) => c.id === id);
+  if (!consultation) return;
+
+  const nextStatus = STATUS_CYCLE[consultation.statue];
+
+  try {
+    // 2. On met à jour la base de données d'abord
+    const { error } = await supabase
+      .from('appointments')
+      .update({ status: nextStatus }) // Utilisation de nextStatus ici
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // 3. Si tout est OK, on met à jour l'affichage
     setConsultations((list) =>
       list.map((c) => {
         if (c.id !== id) return c;
-        const next = STATUS_CYCLE[c.status];
-        if (next === "done") {
+
+        if (nextStatus === "done") {
           toast.success(`Consultation de ${c.animal.name} terminée`);
         }
+
         return {
           ...c,
-          status: next,
-          startedAt: next === "in_progress" ? Date.now() : c.startedAt,
-          endedAt: next === "done" ? Date.now() : undefined,
+          statue: nextStatus,
+          startedAt: nextStatus === "in_progress" ? Date.now() : c.startedAt,
+          endedAt: nextStatus === "done" ? Date.now() : undefined,
         };
       })
     );
+  } catch (err: any) {
+    console.error("Erreur lors de la mise à jour :", err);
+    toast.error("Impossible de mettre à jour le statut du rendez-vous.");
+  }
+};
 
   const handleLogout = async () => {
     await signOut();
@@ -304,7 +415,7 @@ function SidebarContent({ section, onSelect, onLogout, clinicName }: { section: 
 /* ---------- Overview ---------- */
 function Overview({ consultations, onGoQueue }: { consultations: Consultation[]; onGoQueue: () => void }) {
   const counts = consultations.reduce(
-    (acc, c) => ({ ...acc, [c.status]: (acc[c.status] || 0) + 1 }),
+    (acc, c) => ({ ...acc, [c.statue]: (acc[c.statue] || 0) + 1 }),
     { waiting: 0, in_progress: 0, done: 0 } as Record<Status, number>
   );
   const priorityCount = consultations.filter((c) => isPriority(c.reason)).length;
@@ -347,10 +458,10 @@ function Overview({ consultations, onGoQueue }: { consultations: Consultation[];
           {consultations.slice(0, 3).map((c) => (
             <div key={c.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-brand-border/70">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-sm font-semibold text-brand-title">{c.time}</span>
+                <span className="text-sm font-semibold text-brand-title">{c.appointment_time}</span>
                 <span className="text-sm text-muted-foreground truncate">{c.animal.name} · {c.ownerName}</span>
               </div>
-              <StatusPill status={c.status} startedAt={c.startedAt} compact />
+              <StatusPill status={c.statue} startedAt={c.startedAt} compact />
             </div>
           ))}
         </div>
@@ -372,7 +483,7 @@ function QueueView({
   const [justCompleted, setJustCompleted] = useState<string | null>(null);
 
   const handleCycle = (c: Consultation) => {
-    const willBeDone = STATUS_CYCLE[c.status] === "done";
+    const willBeDone = STATUS_CYCLE[c.statue] === "done";
     onCycleStatus(c.id);
     if (willBeDone) {
       setJustCompleted(c.id);
@@ -383,11 +494,11 @@ function QueueView({
   };
 
   const counts = items.reduce(
-    (acc, c) => ({ ...acc, [c.status]: (acc[c.status] || 0) + 1 }),
+    (acc, c) => ({ ...acc, [c.statue]: (acc[c.statue] || 0) + 1 }),
     { waiting: 0, in_progress: 0, done: 0 } as Record<Status, number>
   );
 
-  const filtered = filter === "all" ? items : items.filter((c) => c.status === filter);
+  const filtered = filter === "all" ? items : items.filter((c) => c.statue === filter);
 
   const filters: { key: Status | "all"; label: string; count: number; classes: string }[] = [
     { key: "all", label: "Tout", count: items.length, classes: "bg-brand-soft text-brand-accent border-brand-accent/30" },
@@ -442,7 +553,7 @@ function QueueView({
                   <React.Fragment key={c.id}>
                   <tr className="border-t border-brand-border/60 hover:bg-brand-soft/20 transition-colors">
                     <td className="px-5 py-4 align-top">
-                      <div className="font-medium text-brand-title">{c.time}</div>
+                      <div className="font-medium text-brand-title">{c.appointment_time}</div>
                       {priority && (
                         <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">
                           <AlertTriangle className="h-2.5 w-2.5" /> Prioritaire
@@ -490,7 +601,7 @@ function QueueView({
                       )}
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
+                      <StatusPill status={c.statue} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                     </td>
                     <td className="px-5 py-4 align-top">
                       <ActionMenu />
@@ -501,7 +612,7 @@ function QueueView({
                       <td colSpan={7} className="px-5 pb-4 pt-0">
                         <QuickCompletePanel
                           consultation={c}
-                          nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                          nextWaiting={items.find((i) => i.statue === "waiting" && i.id !== c.id) ?? null}
                           onDismiss={() => setJustCompleted(null)}
                         />
                       </td>
@@ -531,7 +642,7 @@ function QueueView({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {c.time}
+                      {c.appointment_time}
                       {priority && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">
                           <AlertTriangle className="h-2.5 w-2.5" /> Prioritaire
@@ -547,7 +658,7 @@ function QueueView({
                       <span className="text-xs text-muted-foreground">· {c.animal.species}</span>
                     </button>
                   </div>
-                  <StatusPill status={c.status} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
+                  <StatusPill status={c.statue} startedAt={c.startedAt} onClick={() => handleCycle(c)} pulse={justCompleted === c.id} />
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2 font-light">{c.reason}</p>
                 <div className="flex items-center justify-between">
@@ -569,7 +680,7 @@ function QueueView({
                 {justCompleted === c.id && (
                   <QuickCompletePanel
                     consultation={c}
-                    nextWaiting={items.find((i) => i.status === "waiting" && i.id !== c.id) ?? null}
+                    nextWaiting={items.find((i) => i.statue === "waiting" && i.id !== c.id) ?? null}
                     onDismiss={() => setJustCompleted(null)}
                   />
                 )}
@@ -608,7 +719,7 @@ function ActionMenu() {
 }
 
 function StatusPill({ status, startedAt, onClick, compact, pulse }: { status: Status; startedAt?: number; onClick?: () => void; compact?: boolean; pulse?: boolean }) {
-  const m = STATUS_META[status];
+  const m = STATUS_META[status] || STATUS_META["waiting"];
   const Icon = m.icon;
   const [, force] = useState(0);
 
@@ -904,10 +1015,10 @@ function consultationsToEvents(consultations: Consultation[]): CalendarEvent[] {
   return consultations.map((c) => ({
     id: c.id,
     date: today,
-    time: c.time,
+    time: c.appointment_time,
     title: `${c.animal.name} · ${c.ownerName}`,
     subtitle: c.reason,
-    tone: c.status === "done" ? "done" : isPriority(c.reason) ? "urgent" : "default",
+    tone: c.statue === "done" ? "done" : isPriority(c.reason) ? "urgent" : "default",
   }));
 }
 
